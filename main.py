@@ -1,0 +1,75 @@
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters.command import Command
+from config import *
+from database import *
+from aiogram import F
+from func import *
+
+
+
+
+logging.basicConfig(level=logging.INFO)
+
+bot = Bot(token=API_TOKEN)
+
+dp = Dispatcher()
+
+@dp.message(F.text, lambda m: m.text in ['ПИЗИ23о2', 'ПИЗИ23о1'])
+async def group_post(message: types.Message):
+
+    testing_database[message.text] = {
+        'id':message.chat.id,
+        'sent_message':False,
+                                      }
+
+    await message.answer(f'Вы добавленны в группу {message.text}\U0001f44d')
+
+@dp.message(F.text, Command("start"))
+async def cmd_start(message: types.Message):
+
+
+    await message.answer("Чтобы добавить задание на предмет вам нужно:\n"
+                         "1. Написать название предмета ; потом написать дату на которую это"
+                         "задание было задано потом ; а потом само задание.\n"
+                         "Например\n"
+                         "Статистика; 23-11-2023; страница 33 выполнить задания 1-4")
+    await message.answer("Если вы хотите получить задание на определенную дату, то вам нужно написать название предмета потом"
+                         "; а потом дату.\n"
+                         "Например\n"                                                               
+                         "Статистика; 23-11-2023\n"
+                         "Если же вы хотите получить все задания по предмету вам нужно просто написать название предмета")
+
+
+@dp.message(F.text)
+async def input_message(message: types.Message):
+
+    if in_group(message):
+
+        if len(message.text.lower().split(';')) == 3:
+            my_message = post_db(message)
+        elif len(message.text.lower().split(';')) <= 2:
+            #print(get_db(message))
+            my_message = get_db(message)
+        else:
+            my_message = 'Вы ввели неправильный шаблон'
+
+        for i in my_message:
+            await message.answer(i)
+    else:
+        await message.answer('Нужно сначала указать вашу группу')
+
+    print(testing_database)
+
+@dp.message()
+async def error(message: types.Message):
+    await message.answer('Вы отправили не текстовое сообщение')
+
+
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
