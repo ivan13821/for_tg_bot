@@ -16,6 +16,11 @@ bot = Bot(token=API_TOKEN)
 
 dp = Dispatcher()
 
+@dp.message(F.text == '/about_bot')
+async def about_bot(message: types.Message):
+    await message.answer("Этот бот был создан для облегчения поиска домашнего задания для студентов. Здесь его существенно проще найти, и не нужно ждуть пока тебе ответят твои друзья)")
+
+
 @dp.message(F.text, lambda m: m.text in ['ПИЗИ23о2', 'ПИЗИ23о1'])
 async def group_post(message: types.Message):
 
@@ -30,16 +35,18 @@ async def group_post(message: types.Message):
 async def cmd_start(message: types.Message):
 
 
-    await message.answer("Чтобы добавить задание на предмет вам нужно:\n"
-                         "1. Написать название предмета ; потом написать дату на которую это"
+    await message.answer("*Чтобы добавить задание на предмет вам нужно*:\n"
+                         "Написать название предмета ; потом написать дату на которую это"
                          "задание было задано потом ; а потом само задание.\n"
-                         "Например\n"
-                         "Статистика; 23-11-2023; страница 33 выполнить задания 1-4")
+                         "*Шаблон:*\n"
+                         "*Предмет; Дата; Задание*",parse_mode="Markdown")
     await message.answer("Если вы хотите получить задание на определенную дату, то вам нужно написать название предмета потом"
                          "; а потом дату.\n"
-                         "Например\n"                                                               
-                         "Статистика; 23-11-2023\n"
-                         "Если же вы хотите получить все задания по предмету вам нужно просто написать название предмета")
+                         "*Шаблон:*\n"                                                               
+                         "*Предмет; Дата*\n"
+                         "Если же вы хотите получить все задания по предмету вам нужно просто написать название предмета\n"
+                         "*Шаблон:*\n"
+                         "*Предмет*",parse_mode="Markdown")
 
 
 @dp.message(F.text)
@@ -59,8 +66,6 @@ async def input_message(message: types.Message):
             await message.answer(i)
     else:
         await message.answer('Нужно сначала указать вашу группу')
-
-    print(testing_database)
 
 @dp.message()
 async def error(message: types.Message):
