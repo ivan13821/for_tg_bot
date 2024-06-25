@@ -1,9 +1,7 @@
-import redis
 from aiogram import Bot, Dispatcher, types
 
 
 
-# r = redis.Redis(host='localhost', port=6379, db=0)
 
 testing_database = {}
 
