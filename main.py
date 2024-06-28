@@ -53,9 +53,15 @@ async def cmd_start(message: types.Message):
 async def input_message(message: types.Message):
 
     if in_group(message):
+        print(message.text.lower().split(':')[0])
 
         if len(message.text.lower().split(';')) == 3:
-            my_message = post_db(message)
+            if admin(message):
+                my_message = post_db(message)
+            else:
+                my_message = ['Для добавления задания вы должны обладать правами администратора']
+        elif message.text.lower().split(':')[0] in ['мой пароль']:
+            my_message = [add_admin(message)]
         elif len(message.text.lower().split(';')) <= 2:
             #print(get_db(message))
             my_message = get_db(message)
