@@ -1,5 +1,5 @@
 from database import testing_database
-
+from database_config import *
 
 def in_group(message):
     for key in testing_database.keys():
@@ -8,8 +8,6 @@ def in_group(message):
     else:
         return False
 
-administrations = []
-password = '12345'
 
 def admin(message):
     global administrations

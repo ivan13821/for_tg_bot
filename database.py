@@ -1,9 +1,6 @@
-from aiogram import Bot, Dispatcher, types
+from aiogram import types
+from database_config import *
 
-
-
-
-testing_database = {}
 
 
 
