@@ -1,16 +1,12 @@
 import asyncio
 import logging
-from itertools import count
-
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 from config import *
 from database import *
 from func import *
-from contextlib import suppress
-from aiogram.exceptions import TelegramBadRequest
 from magic_filter import F
-
+from game import *
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,31 +14,65 @@ bot = Bot(token=API_TOKEN)
 
 dp = Dispatcher()
 
-user_data = {}
 
 
 
 
-# @dp.message(Command("start"))
-# async def cmd_start(message: types.Message):
-#     kb = [
-#         [types.KeyboardButton(text="С пюрешкой")],
-#         [types.KeyboardButton(text="Без пюрешки")]
-#     ]
-#     keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-#     await message.answer("Как подавать котлеты?", reply_markup=keyboard)
-#
-#
-#
-# @dp.message(F.text == 'Начать игру')
-# async def about_bot(message: types.Message):
-#
-#     """Описывает процесс игры"""
-#
-#     await message.reply("Привет!", reply_markup=kb.greet_kb)
+
+@dp.message(F.text == 'Завершить все операции связанные с игрой')
+async def about_bot(message: types.Message):
+
+    """"Удаление пользователя из БД и обнуление в счетчике"""
+
+    kb = [
+        [types.KeyboardButton(text="Начать новую игру"), types.KeyboardButton(text="Присоединиться")]
+    ]
+    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+
+    for i in game_db.keys():
+        if (x := message.chat.id) in list(game_db[i]['users'].keys()):
+            del game_db[i]['users'][x]
+            if game_db[i]['users'] == {}:
+                print(1)
+                del game_db[i]
+            break
+
+    step_game[message.chat.id] = 0
+
+    await message.answer('Все ваши операции связанные с игрой завершены', reply_markup=keyboard)
 
 
 
+
+@dp.message(F.text == '/game')
+async def about_bot(message: types.Message):
+
+    """Первый шаг при запуске/приединение к игре"""
+
+    kb = [
+        [types.KeyboardButton(text="Начать новую игру"), types.KeyboardButton(text="Присоединиться")]
+    ]
+    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+    await message.answer("Вы хотите начать новую игру или присоединиться к существующей?", reply_markup=keyboard)
+
+
+
+@dp.message(F.text == 'Начать новую игру')
+async def about_bot(message: types.Message):
+
+    """Функция описывает 1 шаг при создании лоббии"""
+
+    id_lobby = create_lobby(message)
+
+    kb = [
+        [types.KeyboardButton(text="Завершить все операции связанные с игрой"), types.KeyboardButton(text="Назад")]
+    ]
+    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+
+    if type(id_lobby) == type(1):
+        await message.answer(f'id лобби: {id_lobby}')
+    else:
+        await message.answer(f'{id_lobby}', reply_markup=keyboard)
 
 
 
