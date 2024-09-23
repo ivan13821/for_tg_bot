@@ -4,3 +4,4 @@ administrations = []
 
 password = '12345'
 
+users = []
