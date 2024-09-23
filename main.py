@@ -5,7 +5,7 @@ from aiogram.filters.command import Command
 from config import *
 from database import *
 from func import *
-from magic_filter import F
+from aiogram import F
 from game import *
 
 logging.basicConfig(level=logging.INFO)
@@ -18,9 +18,8 @@ dp = Dispatcher()
 
 
 
-
 @dp.message(F.text == 'Завершить все операции связанные с игрой')
-async def about_bot(message: types.Message):
+async def stop_all_op(message: types.Message):
 
     """"Удаление пользователя из БД и обнуление в счетчике"""
 
@@ -33,7 +32,7 @@ async def about_bot(message: types.Message):
         if (x := message.chat.id) in list(game_db[i]['users'].keys()):
             del game_db[i]['users'][x]
             if game_db[i]['users'] == {}:
-                print(1)
+                #print(1)
                 del game_db[i]
             break
 
@@ -45,7 +44,7 @@ async def about_bot(message: types.Message):
 
 
 @dp.message(F.text == '/game')
-async def about_bot(message: types.Message):
+async def start_game(message: types.Message):
 
     """Первый шаг при запуске/приединение к игре"""
 
@@ -58,14 +57,14 @@ async def about_bot(message: types.Message):
 
 
 @dp.message(F.text == 'Начать новую игру')
-async def about_bot(message: types.Message):
+async def step_start_1(message: types.Message):
 
     """Функция описывает 1 шаг при создании лоббии"""
 
     id_lobby = create_lobby(message)
 
     kb = [
-        [types.KeyboardButton(text="Завершить все операции связанные с игрой"), types.KeyboardButton(text="Назад")]
+        [types.KeyboardButton(text="Завершить все операции связанные с игрой"), types.KeyboardButton(text="Выйти в меню")]
     ]
     keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
 
@@ -74,6 +73,27 @@ async def about_bot(message: types.Message):
     else:
         await message.answer(f'{id_lobby}', reply_markup=keyboard)
 
+
+
+@dp.message(F.text == 'Присоединиться')
+async def join_to_lobby(message: types.Message):
+
+    """Для присоединения человека к лобби, ввод id на след шаге"""
+
+    if message.chat.id in step_game.keys():
+        if step_game[message.chat.id] == 0:
+            step_game[message.chat.id] = 1
+            await message.answer('Введите id лобби к которому вы хотите подключиться')
+        else:
+            kb = [
+                [types.KeyboardButton(text="Завершить все операции связанные с игрой"),
+                 types.KeyboardButton(text="Выйти в меню")]
+            ]
+            keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+            await message.answer('Лобби не может быть созданно т.к вы уже пытаетесь создать лобби либо не завершили игру', reply_markup=keyboard)
+    else:
+        step_game[message.chat.id] = 1
+        await message.answer('Введите id лобби к которому вы хотите подключиться')
 
 
 
@@ -136,26 +156,30 @@ async def cmd_start(message: types.Message):
 @dp.message(F.text)
 async def input_message(message: types.Message):
 
-    if in_group(message):
-        print(message.text.lower().split(':')[0])
+    if is_this_id(message):
+        await message.answer(add_user_on_group(message.text, message))
 
-        if len(message.text.lower().split(';')) == 3:
-            if admin(message):
-                my_message = post_db(message)
-            else:
-                my_message = ['Для добавления задания вы должны обладать правами администратора']
-        elif message.text.lower().split(':')[0] in ['мой пароль']:
-            my_message = [add_admin(message)]
-        elif len(message.text.lower().split(';')) <= 2:
-            #print(get_db(message))
-            my_message = get_db(message)
-        else:
-            my_message = 'Вы ввели неправильный шаблон'
-
-        for i in my_message:
-            await message.answer(i)
     else:
-        await message.answer('Нужно сначала указать вашу группу')
+        if in_group(message):
+            #print(message.text.lower().split(':')[0])
+
+            if len(message.text.lower().split(';')) == 3:
+                if admin(message):
+                    my_message = post_db(message)
+                else:
+                    my_message = ['Для добавления задания вы должны обладать правами администратора']
+            elif message.text.lower().split(':')[0] in ['мой пароль']:
+                my_message = [add_admin(message)]
+            elif len(message.text.lower().split(';')) <= 2:
+                #print(get_db(message))
+                my_message = get_db(message)
+            else:
+                my_message = 'Вы ввели неправильный шаблон'
+
+            for i in my_message:
+                await message.answer(i)
+        else:
+            await message.answer('Нужно сначала указать вашу группу')
 
 
 
