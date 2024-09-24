@@ -1,6 +1,6 @@
 
-
-
+from main import bot
+import datetime
 game_db = {}
 
 def create_lobby(message):
@@ -14,10 +14,16 @@ def create_lobby(message):
         except:
             id_lobby = 1
 
+        now = datetime.datetime.now()
+
         game_db[id_lobby] = {'users':
                                  {
                                      message.chat.id:{
-
+                                     'лицевой счет':{
+                                         'приход':0,
+                                         'расход':0,
+                                         'остаток':0
+                                     }
                                      }
                                  }
         }
@@ -51,3 +57,13 @@ def found_user_on_lobbyes(message) -> int:
         return 0
 
 
+async def message_from_list(message, users_id, but_id=None):
+
+    """Отправка сообщений всем"""
+
+    # Получаем список всех пользователей
+    for user_id in users_id:
+        if user_id == but_id:
+            continue
+        # Отправляем сообщение каждому пользователю
+        await bot.send_message(user_id, message)

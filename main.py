@@ -13,7 +13,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, ReplyKeyboardRemove
 from database_config import users
-
+from keyboard import *
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,6 +26,7 @@ class MyForm(StatesGroup):
     message_from_all = State()
     join_or_create = State()
     game = State()
+    choice = State()
     input_id = State()
 
 @dp.message(Command(commands=["send_all"]))
@@ -37,6 +38,9 @@ async def admin_command(message: types.Message, state: FSMContext):
         # Ожидаем ответ админа
 
 
+
+
+
 @dp.message(MyForm.message_from_all)
 async def handle_message_for_broadcast(message: types.Message, state: FSMContext):
 
@@ -45,10 +49,8 @@ async def handle_message_for_broadcast(message: types.Message, state: FSMContext
     state_message = message.text
     user_id = message.from_user.id
     if str(user_id) == str(admin_id):
-    # Получаем список всех пользователей
-        for user_id in users:
-        # Отправляем сообщение каждому пользователю
-            await bot.send_message(user_id, state_message)
+
+        await message_from_list(state_message, users)
 
         await state.clear()
 
@@ -64,14 +66,9 @@ async def stop_all_op(message: types.Message, state: FSMContext):
     if game_db[x]['users'] == {}:
         del game_db[x]
 
-    kb = [
-        [types.KeyboardButton(text="Начать новую игру"), types.KeyboardButton(text="Присоединиться")]
-    ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-
     await state.clear()
 
-    await message.answer('Все ваши операции связанные с игрой завершены', reply_markup=keyboard)
+    await message.answer('Все ваши операции связанные с игрой завершены', reply_markup=MyKeyboard.join_create())
 
 
 
@@ -81,11 +78,7 @@ async def start_game(message: types.Message, state: FSMContext):
 
     """Первый шаг при запуске/приединение к игре"""
 
-    kb = [
-        [types.KeyboardButton(text="Начать новую игру"), types.KeyboardButton(text="Присоединиться")]
-    ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-    await message.answer("Вы хотите начать новую игру или присоединиться к существующей?", reply_markup=keyboard)
+    await message.answer("Вы хотите начать новую игру или присоединиться к существующей?", reply_markup=MyKeyboard.join_create())
     await state.set_state(MyForm.join_or_create)
 
 
@@ -99,21 +92,27 @@ async def step_start_1(message: types.Message, state: FSMContext):
 
 
     if type(id_lobby) == type(1):
-        kb = [
-            [types.KeyboardButton(text="Операции в игре..."),
-             types.KeyboardButton(text="Выйти в меню")]
-        ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-        await message.answer(f'id лобби: {id_lobby}', reply_markup=keyboard)
-    else:
-        kb = [
-            [types.KeyboardButton(text="Завершить все операции связанные с игрой"),
-             types.KeyboardButton(text="Выйти в меню")]
-        ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-        await message.answer(f'{id_lobby}', reply_markup=keyboard)
+        await message.answer(f'id лобби: {id_lobby}', reply_markup=MyKeyboard.A_B_C())
+        await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры')
+        await message.answer('Вариант А\n'
+                             'деньги: 4000\n'
+                             'Здание: 7 ед\n'
+                             'Сырье: 30 ед\n'
+                             '\n'
+                             'Вариант Б\n'
+                             'Деньги: 4000\n'
+                             'Оборудование: 14 ед\n'
+                             'Рабочие: 18 ед\n'
+                             '\n'
+                             'Вариант В\n'
+                             'Деньги: 4000\n'
+                             'Технология: 10 ед\n'
+                             'Транспорт: 12 ед\n')
 
-    await state.set_state(MyForm.game)
+        await state.set_state(MyForm.choice)
+    else:
+        await message.answer(f'{id_lobby}', reply_markup=MyKeyboard.back_del_op())
+
 
 
 
@@ -128,21 +127,64 @@ async def join_to_lobby(message: types.Message, state: FSMContext):
 
 
 @dp.message(MyForm.input_id)
-async def join_to_lobby(message: types.Message, state: FSMContext):
+async def input_id(message: types.Message, state: FSMContext):
 
     """Получение id"""
 
-    kb = [
-        [types.KeyboardButton(text="Операции в игре..."),
-         types.KeyboardButton(text="Выйти в меню")]
-    ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-    await message.answer(add_user_on_group(message.text, message), reply_markup=keyboard)
-    await state.set_state(MyForm.game)
+    result_add = add_user_on_group(message.text, message)
+    await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
+    if result_add == 'Вы успешно добавленны в игру':
+        await message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
+        await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры', reply_markup=MyKeyboard.A_B_C())
+        await message.answer('Вариант А\n'
+                             'деньги: 4000\n'
+                             'Здание: 7 ед\n'
+                             'Сырье: 30 ед\n'
+                             '\n'
+                             'Вариант Б\n'
+                             'Деньги: 4000\n'
+                             'Оборудование: 14 ед\n'
+                             'Рабочие: 18 ед\n'
+                             '\n'
+                             'Вариант В\n'
+                             'Деньги: 4000\n'
+                             'Технология: 10 ед\n'
+                             'Транспорт: 12 ед\n')
+
+        await state.set_state(MyForm.choice)
+
+
+
+@dp.message(MyForm.choice)
+async def game(message: types.Message, state: FSMContext):
+
+    """Пользователь выбирает какой вариант ресурсов он хочет получить"""
+    if message.text == 'Выйти в меню':
+        del game_db[(x := found_user_on_lobbyes(message))]['users'][message.chat.id]
+
+        if game_db[x]['users'] == {}:
+            del game_db[x]
+
+        await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
+        await state.clear()
+
+    if message.text == 'А':
+        await message.answer(message.text)
+        await state.set_state(MyForm.game)
+    elif message.text == 'Б':
+        await message.answer(message.text)
+        await state.set_state(MyForm.game)
+    elif message.text == 'В':
+        await message.answer(message.text)
+        await state.set_state(MyForm.game)
+    else:
+        await message.answer('Выберете пожалуйста вариант из всплывающей клавиатуры')
+        await state.set_state(MyForm.choice)
+
 
 
 @dp.message(MyForm.game)
-async def join_to_lobby(message: types.Message, state: FSMContext):
+async def game(message: types.Message, state: FSMContext):
 
     """Обработчик внутри игровых событий"""
 
@@ -152,11 +194,7 @@ async def join_to_lobby(message: types.Message, state: FSMContext):
         if game_db[x]['users'] == {}:
             del game_db[x]
 
-        kb = [
-            [types.KeyboardButton(text="Меню")]
-        ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-        await message.answer('Вы вышли в соновное меню', reply_markup=keyboard)
+        await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
         await state.clear()
     else:
         state_message = str(message.chat.username)+': '+message.text
