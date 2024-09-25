@@ -28,6 +28,7 @@ class MyForm(StatesGroup):
     game = State()
     choice = State()
     input_id = State()
+    stop_op = State()
 
 @dp.message(Command(commands=["send_all"]))
 async def admin_command(message: types.Message, state: FSMContext):
@@ -38,7 +39,11 @@ async def admin_command(message: types.Message, state: FSMContext):
         # Ожидаем ответ админа
 
 
+async def message_from_user(user_id, message):
 
+    """Отправка сообщения пользователю по id"""
+
+    await bot.send_message(user_id, message)
 
 
 @dp.message(MyForm.message_from_all)
@@ -50,18 +55,18 @@ async def handle_message_for_broadcast(message: types.Message, state: FSMContext
     user_id = message.from_user.id
     if str(user_id) == str(admin_id):
 
-        await message_from_list(state_message, users)
+        await Game.message_from_list(state_message, users)
 
         await state.clear()
 
 
-@dp.message(F.text == 'Завершить все операции связанные с игрой')
+@dp.message(MyForm.stop_op)
 async def stop_all_op(message: types.Message, state: FSMContext):
 
     """"Удаление пользователя из БД"""
 
-
-    del game_db[(x := found_user_on_lobbyes(message))]['users'][message.chat.id]
+    del users_l[message.chat.id]
+    del game_db[(x := users_l[message.chat.id])['users'][message.chat.id]]
 
     if game_db[x]['users'] == {}:
         del game_db[x]
@@ -88,7 +93,7 @@ async def step_start_1(message: types.Message, state: FSMContext):
 
     """Функция описывает 1 шаг при создании лоббии"""
 
-    id_lobby = create_lobby(message)
+    id_lobby = Game.create_lobby(message)
 
 
     if type(id_lobby) == type(1):
@@ -111,7 +116,7 @@ async def step_start_1(message: types.Message, state: FSMContext):
 
         await state.set_state(MyForm.choice)
     else:
-        await message.answer(f'{id_lobby}', reply_markup=MyKeyboard.back_del_op())
+        await message.answer(f'{id_lobby}', reply_markup=MyKeyboard.back_on_menu())
 
 
 
@@ -131,10 +136,10 @@ async def input_id(message: types.Message, state: FSMContext):
 
     """Получение id"""
 
-    result_add = add_user_on_group(message.text, message)
+    result_add = Game.add_user_on_group(message.text, message)
     await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
     if result_add == 'Вы успешно добавленны в игру':
-        await message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
+        await Game.message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
         await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры', reply_markup=MyKeyboard.A_B_C())
         await message.answer('Вариант А\n'
                              'деньги: 4000\n'
@@ -159,27 +164,18 @@ async def input_id(message: types.Message, state: FSMContext):
 async def game(message: types.Message, state: FSMContext):
 
     """Пользователь выбирает какой вариант ресурсов он хочет получить"""
+
     if message.text == 'Выйти в меню':
-        del game_db[(x := found_user_on_lobbyes(message))]['users'][message.chat.id]
+        await state.set_state(MyForm.stop_op)
 
-        if game_db[x]['users'] == {}:
-            del game_db[x]
-
-        await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
-        await state.clear()
-
-    if message.text == 'А':
-        await message.answer(message.text)
-        await state.set_state(MyForm.game)
-    elif message.text == 'Б':
-        await message.answer(message.text)
-        await state.set_state(MyForm.game)
-    elif message.text == 'В':
-        await message.answer(message.text)
-        await state.set_state(MyForm.game)
     else:
-        await message.answer('Выберете пожалуйста вариант из всплывающей клавиатуры')
-        await state.set_state(MyForm.choice)
+        result = Game.add_start_res(message)
+        if result:
+            await message.answer('Начальные ресурсы получены', reply_markup=MyKeyboard.menu_in_game())
+            await state.set_state(MyForm.game)
+        else:
+            await message.answer('Выберете пожалуйста вариант из всплывающей клавиатуры')
+            await state.set_state(MyForm.choice)
 
 
 
@@ -188,21 +184,19 @@ async def game(message: types.Message, state: FSMContext):
 
     """Обработчик внутри игровых событий"""
 
+
     if message.text == 'Выйти в меню':
-        del game_db[(x := found_user_on_lobbyes(message))]['users'][message.chat.id]
-
-        if game_db[x]['users'] == {}:
-            del game_db[x]
-
-        await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
-        await state.clear()
+        await state.set_state(MyForm.stop_op)
+    elif message.text == 'Мои ресурсы':
+        await message_from_user(message.chat.id, 'state_message')
     else:
+        #print(game_db)
         state_message = str(message.chat.username)+': '+message.text
-        lobby_id = found_user_on_lobbyes(message)
+        lobby_id = users_l[message.chat.id]
         for user_id in game_db[lobby_id]['users'].keys():
             if user_id == message.chat.id:
                 continue
-            await bot.send_message(user_id, state_message)
+            await message_from_user(user_id, state_message)
 
 
 
@@ -274,7 +268,6 @@ async def input_message(message: types.Message):
 
 
         if in_group(message):
-            #print(message.text.lower().split(':')[0])
 
             if len(message.text.lower().split(';')) == 3:
                 if admin(message):
@@ -284,7 +277,6 @@ async def input_message(message: types.Message):
             elif message.text.lower().split(':')[0] in ['мой пароль']:
                 my_message = [add_admin(message)]
             elif len(message.text.lower().split(';')) <= 2:
-                #print(get_db(message))
                 my_message = get_db(message)
             else:
                 my_message = 'Вы ввели неправильный шаблон'

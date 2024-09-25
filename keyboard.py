@@ -16,16 +16,8 @@ class MyKeyboard():
         kb = [
             [types.KeyboardButton(text="А"),
              types.KeyboardButton(text="Б"),
-             types.KeyboardButton(text="В"), ]
-        ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-        return keyboard
-
-    @staticmethod
-    def back_del_op():
-        kb = [
-            [types.KeyboardButton(text="Завершить все операции связанные с игрой"),
-             types.KeyboardButton(text="Выйти в меню")]
+             types.KeyboardButton(text="В"), ],
+            [types.KeyboardButton(text="Выйти в меню")]
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
@@ -42,6 +34,15 @@ class MyKeyboard():
     def menu():
         kb = [
             [types.KeyboardButton(text="меню")]
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
+    @staticmethod
+    def menu_in_game():
+        kb = [
+            [types.KeyboardButton(text="Выйти в меню"),
+             types.KeyboardButton(text="Мои ресурсы")]
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
