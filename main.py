@@ -29,6 +29,7 @@ class MyForm(StatesGroup):
     choice = State()
     input_id = State()
     stop_op = State()
+    input_name = State()
 
 @dp.message(Command(commands=["send_all"]))
 async def admin_command(message: types.Message, state: FSMContext):
@@ -65,15 +66,16 @@ async def stop_all_op(message: types.Message, state: FSMContext):
 
     """"Удаление пользователя из БД"""
 
+
+    del game_db[(x := users_l[message.chat.id])]['users'][message.chat.id]
     del users_l[message.chat.id]
-    del game_db[(x := users_l[message.chat.id])['users'][message.chat.id]]
 
     if game_db[x]['users'] == {}:
         del game_db[x]
 
     await state.clear()
 
-    await message.answer('Все ваши операции связанные с игрой завершены', reply_markup=MyKeyboard.join_create())
+    await message.answer('Все ваши операции связанные с игрой завершены', reply_markup=MyKeyboard.menu())
 
 
 
@@ -136,6 +138,9 @@ async def input_id(message: types.Message, state: FSMContext):
 
     """Получение id"""
 
+    if message.text == 'Выйти в меню':
+        await stop_all_op(message, state)
+
     result_add = Game.add_user_on_group(message.text, message)
     await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
     if result_add == 'Вы успешно добавленны в игру':
@@ -161,21 +166,55 @@ async def input_id(message: types.Message, state: FSMContext):
 
 
 @dp.message(MyForm.choice)
-async def game(message: types.Message, state: FSMContext):
+async def choice(message: types.Message, state: FSMContext):
 
     """Пользователь выбирает какой вариант ресурсов он хочет получить"""
 
     if message.text == 'Выйти в меню':
-        await state.set_state(MyForm.stop_op)
+        await stop_all_op(message, state)
 
     else:
         result = Game.add_start_res(message)
         if result:
-            await message.answer('Начальные ресурсы получены', reply_markup=MyKeyboard.menu_in_game())
-            await state.set_state(MyForm.game)
+            await message.answer('Начальные ресурсы получены', reply_markup=ReplyKeyboardRemove())
+            await message.answer('Введите пожалуста ник под которым вы будете играть (ник не должен быть больше 10 символов)')
+            await state.set_state(MyForm.input_name)
         else:
             await message.answer('Выберете пожалуйста вариант из всплывающей клавиатуры')
             await state.set_state(MyForm.choice)
+
+
+
+
+
+@dp.message(MyForm.input_name)
+async def game(message: types.Message, state: FSMContext):
+
+    """Пользователь пишет свой ник"""
+
+    if message.text == 'Выйти в меню':
+        await stop_all_op(message, state)
+
+    else:
+
+        if len(list(message.text)) > 10:
+            await message.answer(f'Введите пожалуста ник до 10 символов')
+            await state.set_state(MyForm.input_name)
+        else:
+
+            for i in users_name.keys():
+                if users_name[i]['nik'] == message.text:
+                    await message.answer('К сожалению этот ник уже занят, напишите пожалуйста другой')
+                    await state.set_state(MyForm.input_name)
+                    break
+            else:
+                users_name[message.chat.id] = {'nik':message.text, 'username':message.chat.username}
+                #print(users_name)
+                await message.answer(f'Вы в игре под ником {message.text.strip()}', reply_markup=MyKeyboard.menu_in_game())
+                await state.set_state(MyForm.game)
+
+
+
 
 
 
@@ -184,13 +223,57 @@ async def game(message: types.Message, state: FSMContext):
 
     """Обработчик внутри игровых событий"""
 
-
     if message.text == 'Выйти в меню':
-        await state.set_state(MyForm.stop_op)
+        await stop_all_op(message, state)
+    if message.text == 'История':
+        await Game.show_operations(message)
+
     elif message.text == 'Мои ресурсы':
-        await message_from_user(message.chat.id, 'state_message')
+
+        result_message = ''
+        for i in game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'].items():
+            result_message = result_message+f'{i[0]}: {i[1]}\n'
+        await message_from_user(message.chat.id, result_message)
+
+    elif message.text == 'Биржа':
+        result_message = ''
+        for i in back_game['ресурсы'].items():
+            result_message = result_message + f'{i[0]}: {i[1]}\n'
+        await message_from_user(message.chat.id, result_message)
+
+    elif message.text == 'Шаблоны':
+        await message.answer('Шаблон 1 (покупка или продажа):\n'
+                             '*| действие | пользователь | ресурс | количество | цена\n*'
+                             'Пример:\n'
+                             '*купить иван сырье 5 500\n*'
+                             '(Покупка у пользователя под ником "иван" ресурс "сырье" в количестве 5 шт и по цене 500 д.ед)', parse_mode="Markdown")
+        await message.answer('Если вы продаете или покапаете ресурсы на биржу, то не нужно указывать цену',
+                             parse_mode="Markdown")
+
+        await message.answer('Шаблон 2 (обмен ресурсами):\n'
+                             '| действие | 2 сторона | ресурс 1 | количество рес 1 | ресурс 2 | количество рес 2 | *ресурс 1 идет вам*|\n'
+                             'Например\n'
+                             '*обмен олег сырье 7 оборудование 2*', parse_mode="Markdown")
+
+    elif 'купить' in message.text.lower():
+        await message.answer(Game.bye(message), parse_mode="Markdown")
+
+
+    elif 'продать' in message.text.lower():
+        await message.answer(Game.sold(message), parse_mode="Markdown")
+
+    elif 'обменять' in message.text.lower() or 'обмен' in message.text.lower():
+        await message.answer(Game.swap(message), parse_mode="Markdown")
+
+    elif message.text == 'Список игроков':
+
+        result = ''
+        for i in game_db[users_l[message.chat.id]]['users'].keys():
+            result += f'{users_name[i]['username']}: {users_name[i]['nik']}\n'
+
+        await message.answer(result)
+
     else:
-        #print(game_db)
         state_message = str(message.chat.username)+': '+message.text
         lobby_id = users_l[message.chat.id]
         for user_id in game_db[lobby_id]['users'].keys():

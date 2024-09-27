@@ -42,7 +42,11 @@ class MyKeyboard():
     def menu_in_game():
         kb = [
             [types.KeyboardButton(text="Выйти в меню"),
-             types.KeyboardButton(text="Мои ресурсы")]
+             types.KeyboardButton(text="Мои ресурсы"),
+             types.KeyboardButton(text="История"),],
+            [types.KeyboardButton(text="Список игроков"),
+             types.KeyboardButton(text="Биржа"),
+             types.KeyboardButton(text="Шаблоны")]
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
