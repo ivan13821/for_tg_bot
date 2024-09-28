@@ -68,20 +68,40 @@ class Game():
             return 'Вы ввели неправильно id лобби'
 
     @staticmethod
-    def add_operation(message, text=None):
+    def add_operation(message, nik_user_2=None, text=None):
 
         """сохраняет данные об финансовых операциях"""
+        id_user_2 = None
+
+        for i in users_name.items():
+            if i[1]['nik'] == nik_user_2:
+                id_user_2 = i[0]
+                break
+
+        if not(id_user_2 == None):
+            if text == None:
+                try:
+                    game_db['operations'][id_user_2].append(f'{users_name[message.chat.id]['nik']}: {message.text}')
+                except:
+                    game_db['operations'][id_user_2] = [f'{users_name[message.chat.id]['nik']}: {message.text}']
+
+            else:
+                try:
+                    game_db['operations'][id_user_2].append(f'{users_name[message.chat.id]['nik']}: {text}')
+                except:
+                    game_db['operations'][id_user_2] = [f'{users_name[message.chat.id]['nik']}: {text}']
+
         if text == None:
             try:
-                game_db['operations'][message.chat.id].append(message.text)
+                game_db['operations'][message.chat.id].append(f'{users_name[message.chat.id]['nik']}: {message.text}')
             except:
-                game_db['operations'][message.chat.id] = [message.text]
+                game_db['operations'][message.chat.id] = [f'{users_name[message.chat.id]['nik']}: {message.text}']
 
         else:
             try:
-                game_db['operations'][message.chat.id].append(text)
+                game_db['operations'][message.chat.id].append(f'{users_name[message.chat.id]['nik']}: {text}')
             except:
-                game_db['operations'][message.chat.id] = [text]
+                game_db['operations'][message.chat.id] = [f'{users_name[message.chat.id]['nik']}: {text}']
 
 
 
@@ -126,9 +146,6 @@ class Game():
 
         string = message.text.strip().split()[1::]
 
-        if string[0] != 'биржа':
-            Game.add_operation(message.text)
-
 
         if string[0] == 'биржа':
 
@@ -149,13 +166,14 @@ class Game():
             text = ' '.join(text)
 
             cost = cost * int(string[2])
-            Game.add_operation(message, text=text)
 
             if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
 
             game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] -= cost
 
             game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][string[1]] += int(string[2])
+
+            Game.add_operation(message, text=text)
 
             return 'Успешно'
 
@@ -193,6 +211,9 @@ class Game():
         game_db[users_l[user_id]]['users'][user_id]['ресурсы']['деньги'] += cost
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
 
+        if string[0] != 'биржа':
+            Game.add_operation(message, nik_user_2=string[0])
+
         return 'Успешно'
 
 
@@ -210,9 +231,6 @@ class Game():
 
         string = message.text.strip().split()[1::]
 
-        if string[0] != 'биржа':
-            Game.add_operation(message.text)
-
 
         if string[0] == 'биржа':
 
@@ -229,11 +247,9 @@ class Game():
 
             text.append(str(cost))
 
-            text = ' '.join(text)
 
             cost = cost * int(string[2])
             text = ' '.join(message.text.split().append(string[1]))
-            Game.add_operation(message, text=text)
 
 
             if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ед. ресурса'
@@ -241,6 +257,8 @@ class Game():
             game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] += cost
 
             game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][string[1]] -= int(string[2])
+
+            Game.add_operation(message, text=text)
 
             return 'Успешно'
 
@@ -274,6 +292,8 @@ class Game():
         game_db[users_l[user_id]]['users'][user_id]['ресурсы']['деньги'] -= cost
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
 
+        if string[0] != 'биржа':
+            Game.add_operation(message.text, nik_user_2=string[0])
         return 'Успешно'
 
 
@@ -283,8 +303,6 @@ class Game():
 
         """Обмен ресурсами c игроком"""
         #| действие | 2 сторона | ресурс 1 | количество рес 1 | ресурс 2 | количество рес 2 | ресурс 1 идет пользователю отправившему сообщение
-
-        Game.add_operation(message)
 
         string = message.text.strip().split()[1::]
 
@@ -306,6 +324,8 @@ class Game():
 
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
+
+        Game.add_operation(message, nik_user_2=string[0])
 
         return 'Успешно'
 
