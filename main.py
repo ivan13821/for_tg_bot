@@ -30,6 +30,8 @@ class MyForm(StatesGroup):
     input_id = State()
     stop_op = State()
     input_name = State()
+    production_option = State()
+    reference = State()
 
 @dp.message(Command(commands=["send_all"]))
 async def admin_command(message: types.Message, state: FSMContext):
@@ -223,25 +225,82 @@ async def game(message: types.Message, state: FSMContext):
 
     """Обработчик внутри игровых событий"""
 
-    if message.text == 'Выйти в меню':
+    if message.text == 'Выйти в меню': #Выводит игрока в игру и удаляет все данные о нем
         await stop_all_op(message, state)
-    if message.text == 'История':
+    if message.text == 'История': #
         await Game.show_operations(message)
 
-    elif message.text == 'Мои ресурсы':
+    elif message.text == 'Мои ресурсы':#Показывает экономические ресурсы пользователя
 
         result_message = ''
         for i in game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'].items():
             result_message = result_message+f'{i[0]}: {i[1]}\n'
         await message_from_user(message.chat.id, result_message)
 
-    elif message.text == 'Биржа':
-        result_message = ''
-        for i in back_game['ресурсы'].items():
-            result_message = result_message + f'{i[0]}: {i[1]}\n'
-        await message_from_user(message.chat.id, result_message)
+    elif message.text == 'Повысить уровень производства':
+        await message.answer('Выберете вариант производства, который вы хотели бы приобрести', reply_markup=MyKeyboard.product_option())
+        await state.set_state(MyForm.production_option)
 
-    elif message.text == 'Шаблоны':
+    elif message.text == 'Cправка':
+        await message.answer('Выберете какую информацию вы хотели бы получить', reply_markup=MyKeyboard.reference())
+        await state.set_state(MyForm.reference)
+
+    elif 'купить' in message.text.lower():#покупка ресурсов
+        await message.answer(Game.bye(message), parse_mode="Markdown")
+
+
+    elif 'продать' in message.text.lower():#продажа ресурсов
+        await message.answer(Game.sold(message), parse_mode="Markdown")
+
+    elif 'обменять' in message.text.lower() or 'обмен' in message.text.lower():#обмен ресурсов
+        await message.answer(Game.swap(message), parse_mode="Markdown")
+
+    elif message.text == 'Список игроков':#вывод всех игроков
+
+        result = ''
+        for i in game_db[users_l[message.chat.id]]['users'].keys():
+            result += f'{users_name[i]['username']}: {users_name[i]['nik']}\n'
+
+        await message.answer(result)
+
+    else:#отправка сообщения всем пользователям
+        state_message = str(message.chat.username)+': '+message.text
+        lobby_id = users_l[message.chat.id]
+        for user_id in game_db[lobby_id]['users'].keys():
+            if user_id == message.chat.id:
+                continue
+            await message_from_user(user_id, state_message)
+
+
+
+
+@dp.message(MyForm.production_option)
+async def prod_option(message: types.Message, state: FSMContext):
+
+    result = Game.sold_on_rialto(message)
+
+    await message.answer(result, reply_markup=MyKeyboard.menu_in_game())
+    await state.set_state(MyForm.game)
+
+
+
+@dp.message(MyForm.reference)
+async def prod_option(message: types.Message, state: FSMContext):
+
+    if message.text == 'Тех. карта':#Информация о этапах производства и нужных для этого ресурсах
+
+
+        for i in back_game['тех_карта'].items():
+            result_message = ''
+            result_message += '*'+i[0]+ '%' +'*'+'\n'+'*'+'экономические ресурсы:'+'*'+'\n'
+            for j in i[1]['эк_рес'].items():
+                result_message += j[0]+': '+str(j[1])+'\n'
+
+            result_message += '*' + 'себестоимость: ' + str(i[1]['себестоимость']) + '*' + '\n'
+            result_message += '*' + 'выручка: ' + str(i[1]['выручка']) + '*' + '\n'
+            await message.answer(result_message, parse_mode="Markdown")
+
+    elif message.text == 'Шаблоны':#Показывает шаблоны сообщений
         await message.answer('Шаблон 1 (покупка или продажа):\n'
                              '*| действие | пользователь | ресурс | количество | цена\n*'
                              'Пример:\n'
@@ -255,34 +314,17 @@ async def game(message: types.Message, state: FSMContext):
                              'Например\n'
                              '*обмен олег сырье 7 оборудование 2*', parse_mode="Markdown")
 
-    elif 'купить' in message.text.lower():
-        await message.answer(Game.bye(message), parse_mode="Markdown")
 
+    elif message.text == 'Биржа':#Информация о ценах на бирже
+        result_message = ''
+        for i in back_game['ресурсы'].items():
+            result_message = result_message + f'{i[0]}: {i[1]}\n'
+        await message_from_user(message.chat.id, result_message)
 
-    elif 'продать' in message.text.lower():
-        await message.answer(Game.sold(message), parse_mode="Markdown")
+    elif message.text == 'Назад':
 
-    elif 'обменять' in message.text.lower() or 'обмен' in message.text.lower():
-        await message.answer(Game.swap(message), parse_mode="Markdown")
-
-    elif message.text == 'Список игроков':
-
-        result = ''
-        for i in game_db[users_l[message.chat.id]]['users'].keys():
-            result += f'{users_name[i]['username']}: {users_name[i]['nik']}\n'
-
-        await message.answer(result)
-
-    else:
-        state_message = str(message.chat.username)+': '+message.text
-        lobby_id = users_l[message.chat.id]
-        for user_id in game_db[lobby_id]['users'].keys():
-            if user_id == message.chat.id:
-                continue
-            await message_from_user(user_id, state_message)
-
-
-
+        await message.answer('Вы вышли в игру', reply_markup=MyKeyboard.menu_in_game())
+        await state.set_state(MyForm.game)
 
 
 

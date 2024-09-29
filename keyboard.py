@@ -12,6 +12,35 @@ class MyKeyboard():
         return keyboard
 
     @staticmethod
+    def reference():
+        kb = [
+            [
+                types.KeyboardButton(text="Биржа"), types.KeyboardButton(text="Тех. карта")
+            ],
+            [
+                types.KeyboardButton(text="Шаблоны"), types.KeyboardButton(text="Назад")
+            ]
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
+    @staticmethod
+    def product_option():
+        kb = [
+            [
+                types.KeyboardButton(text="0%"), types.KeyboardButton(text="10%")
+            ],
+            [
+                types.KeyboardButton(text="25%"), types.KeyboardButton(text="50%")
+            ],
+            [
+                types.KeyboardButton(text="100%")
+            ],
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
+    @staticmethod
     def A_B_C():
         kb = [
             [types.KeyboardButton(text="А"),
@@ -41,12 +70,18 @@ class MyKeyboard():
     @staticmethod
     def menu_in_game():
         kb = [
-            [types.KeyboardButton(text="Выйти в меню"),
-             types.KeyboardButton(text="Мои ресурсы"),
-             types.KeyboardButton(text="История"),],
-            [types.KeyboardButton(text="Список игроков"),
-             types.KeyboardButton(text="Биржа"),
-             types.KeyboardButton(text="Шаблоны")]
+            [
+                types.KeyboardButton(text="Выйти в меню"),
+                types.KeyboardButton(text="Мои ресурсы")
+            ],
+            [
+                types.KeyboardButton(text="Список игроков"),
+                types.KeyboardButton(text='Повысить уровень производства')
+            ],
+            [
+                types.KeyboardButton(text="Cправка"),
+                types.KeyboardButton(text="История")
+            ]
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
