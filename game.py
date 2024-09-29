@@ -1,5 +1,6 @@
 
 from main import bot, message_from_user
+import datetime
 game_db = {}
 users_l = {}
 users_name = {}
@@ -335,38 +336,3 @@ class Game():
         except:
             text = 'Финансовых операций еще не проводилось'
         await message_from_user(message.chat.id, text)
-
-
-    @staticmethod
-    def sold_on_rialto(message):
-
-        """Продажа ресурсов на биржу на повышение производства"""
-
-        try:
-            tip = back_game['тех_карта'][message.text]
-        except:
-            return 'Данного типа производства несуществует, пожалуйста выберете из данных вариантов'
-
-
-        result = []
-        for i in tip['эк_рес'].keys():
-
-
-            if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] < tip['эк_рес'][i]:
-                result.append(i)
-
-        if result == []:
-            for i in tip['эк_рес'].keys():
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] -= tip['эк_рес'][i]
-
-        else:
-            text = 'Нехватает ресурсов: '
-            text += ', '.join(result)
-            return text
-
-
-
-        game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] += tip['эк_рес']['выручка']
-
-        return 'Успешно'
-
