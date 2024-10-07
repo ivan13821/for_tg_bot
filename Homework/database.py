@@ -1,5 +1,5 @@
 from aiogram import types
-from database_config import *
+from economik_game.database_config import *
 
 
 

@@ -1,5 +1,4 @@
-from database import testing_database
-from database_config import *
+from economik_game.database_config import *
 
 def in_group(message):
     for key in testing_database.keys():
