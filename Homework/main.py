@@ -6,8 +6,6 @@ from Homework.func import *
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from economik_game.database_config import users
-from economik_game.keyboard import *
 from bot_config import *
 from Homework.database import *
 
