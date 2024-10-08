@@ -24,6 +24,7 @@ class MyForm(StatesGroup):
     game_credit = State()
     add_credit = State()
     pay_for_credit = State()
+    want_exit = State()
 
 
 
@@ -142,28 +143,28 @@ async def input_id(message: types.Message, state: FSMContext):
 
     if message.text == 'Выйти в меню':
         await stop_all_op(message, state)
+    else:
+        result_add = EconomicGame.add_user_on_group(message.text, message)
+        await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
+        if result_add == 'Вы успешно добавленны в игру':
+            await EconomicGame.message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
+            await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры', reply_markup=MyKeyboard.A_B_C())
+            await message.answer('Вариант А\n'
+                                 'деньги: 4000\n'
+                                 'Здание: 7 ед\n'
+                                 'Сырье: 30 ед\n'
+                                 '\n'
+                                 'Вариант Б\n'
+                                 'Деньги: 4000\n'
+                                 'Оборудование: 14 ед\n'
+                                 'Рабочие: 18 ед\n'
+                                 '\n'
+                                 'Вариант В\n'
+                                 'Деньги: 4000\n'
+                                 'Технология: 10 ед\n'
+                                 'Транспорт: 12 ед\n')
 
-    result_add = EconomicGame.add_user_on_group(message.text, message)
-    await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
-    if result_add == 'Вы успешно добавленны в игру':
-        await EconomicGame.message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
-        await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры', reply_markup=MyKeyboard.A_B_C())
-        await message.answer('Вариант А\n'
-                             'деньги: 4000\n'
-                             'Здание: 7 ед\n'
-                             'Сырье: 30 ед\n'
-                             '\n'
-                             'Вариант Б\n'
-                             'Деньги: 4000\n'
-                             'Оборудование: 14 ед\n'
-                             'Рабочие: 18 ед\n'
-                             '\n'
-                             'Вариант В\n'
-                             'Деньги: 4000\n'
-                             'Технология: 10 ед\n'
-                             'Транспорт: 12 ед\n')
-
-        await state.set_state(MyForm.choice)
+            await state.set_state(MyForm.choice)
 
 
 
@@ -256,7 +257,9 @@ async def game(message: types.Message, state: FSMContext):
     """Обработчик внутри игровых событий"""
 
     if message.text == 'Выйти в меню': #Выводит игрока в игру и удаляет все данные о нем
-        await stop_all_op(message, state)
+        await message.answer('Вы хотите выйти из игры?\nЕсли вы выйдете из игры все данные будут удалены', reply_markup=MyKeyboard.yes_or_no())
+        await state.set_state(MyForm.want_exit)
+
     if message.text == 'История': #
         await EconomicGame.show_operations(message)
 
@@ -317,6 +320,25 @@ async def game(message: types.Message, state: FSMContext):
 
 
 
+@router.message(MyForm.want_exit)
+async def want_exit(message: types.Message, state: FSMContext):
+
+    """Проверяет хочет ли пользователь выйти или хочет вернуться в игру"""
+
+    if message.text == 'Да':
+        await stop_all_op(message, state)
+
+    elif message.text == 'Нет':
+        await message.answer('Вы вернулись в игру', reply_markup=MyKeyboard.menu_in_game())
+        await state.set_state(MyForm.game)
+
+    else:
+        await message.answer('Выберете пожалуйста вариант из списка')
+
+
+
+
+
 
 
 
@@ -326,9 +348,15 @@ async def game(message: types.Message, state: FSMContext):
 @router.message(MyForm.production_option)
 async def prod_option(message: types.Message, state: FSMContext):
 
+    """ Повышает уровень производства и, если нужно отправляет всем пользователям в группе уведомление о начале нового года """
+
     result = EconomicGame.sold_on_rialto(message)
 
+
     await message.answer(result, reply_markup=MyKeyboard.menu_in_game())
+
+    if result == 'Успешно':
+        EconomicGame.add_operation(message, text=f'Повышение уровня производства на {message.text}')
 
     if Years.new_year(message):
         credit.choice_credit_bid(users_l[message.chat.id])

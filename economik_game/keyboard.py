@@ -11,6 +11,22 @@ class MyKeyboard():
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
 
+
+
+
+
+    @staticmethod
+    def yes_or_no():
+        kb = [
+            [types.KeyboardButton(text="Да"), types.KeyboardButton(text="Нет")]
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
+
+
+
+
     @staticmethod
     def credit():
         kb = [
@@ -19,6 +35,11 @@ class MyKeyboard():
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
+
+
+
+
+
 
     @staticmethod
     def reference():
@@ -32,6 +53,11 @@ class MyKeyboard():
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
+
+
+
+
+
 
     @staticmethod
     def product_option():
@@ -49,6 +75,12 @@ class MyKeyboard():
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
 
+
+
+
+
+
+
     @staticmethod
     def A_B_C():
         kb = [
@@ -59,6 +91,12 @@ class MyKeyboard():
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
+
+
+
+
+
+
 
     @staticmethod
     def back_on_menu():
@@ -75,6 +113,13 @@ class MyKeyboard():
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
+
+
+
+
+
+
+
 
     @staticmethod
     def menu_in_game():

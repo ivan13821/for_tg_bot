@@ -32,9 +32,10 @@ class EconomicGame():
 
             game_db[id_lobby] = {'users':{}}
 
+            credit.create(users_l[message.chat.id])
+
             EconomicGame.add_user_on_group(id_lobby, message)
 
-            credit.create(users_l[message.chat.id])
             return id_lobby
 
 
@@ -53,6 +54,8 @@ class EconomicGame():
             id_lobby = int(id_lobby)
         except:
             return 'id должен состоять из цифр'
+
+
         if id_lobby in game_db.keys():
             users_l[message.chat.id] = id_lobby
             game_db[id_lobby]['users'][message.chat.id] = {
@@ -72,6 +75,11 @@ class EconomicGame():
                 },
                 'ready':False
             }
+
+            # Проверка не был ли закончен 1 год, если да то пользователь не может зайти
+            if credit.show_credit_bid(message) == '50%':
+                return 'Вы не можете зайти в игру, т.к в игре прошло уже больше года игрового времени'
+
             return 'Вы успешно добавленны в игру'
         else:
             return 'Вы ввели неправильно id лобби'
@@ -89,10 +97,11 @@ class EconomicGame():
 
         id_user_2 = None
 
-        for i in users_name.items():
-            if i[1]['nik'] == nik_user_2:
-                id_user_2 = i[0]
-                break
+        if nik_user_2 is not None:
+            for i in users_name.items():
+                if i[1]['nik'] == nik_user_2:
+                    id_user_2 = i[0]
+                    break
 
         if not(id_user_2 == None):
             if text == None:
@@ -479,14 +488,10 @@ class EconomicGame():
 
 
         for i in game_db[users_l[message.chat.id]]['users'].keys():
-            if game_db[users_l[message.chat.id]]['users'][i]['ready'] == False:
+            if not game_db[users_l[message.chat.id]]['users'][i]['ready']:
                 break
         else:
-            return 'Начался новый год!!!'
-
-        for i in game_db[users_l[message.chat.id]]['users'].keys():
-            game_db[users_l[message.chat.id]]['users'][i]['ready'] = False
-
+            return 'Успешно'
 
 
         return 'Успешно'
@@ -501,7 +506,7 @@ class EconomicGame():
     @staticmethod
     def new_year(id_lobby):
 
-        """ Позволяет пользователю вновь торгавать своими ресурсами """
+        """ Позволяет пользователю вновь торговать своими ресурсами """
 
         for i in game_db[id_lobby]['users'].keys():
             game_db[id_lobby]['users'][i]['ready'] = False
