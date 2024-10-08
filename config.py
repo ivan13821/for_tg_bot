@@ -1,2 +1,2 @@
-API_TOKEN = '6522425867:AAEuama_xdR4ltc6mG32PfWOu6WJQIZp0tY'
-admin_id = '5410213052'
+API_TOKEN = ''
+admin_id = ''
