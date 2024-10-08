@@ -163,6 +163,9 @@ class EconomicGame():
 
             for i in res.items():
                 game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i[0]] += i[1]
+                if i[0] == 'деньги':
+                    credit.add_credit(message, number=int(i[1]))
+
             return True
 
         else:
