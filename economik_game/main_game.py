@@ -3,8 +3,10 @@ from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove
-from keyboard import *
-from economik_game import *
+from economik_game.keyboard import *
+from economik_game.economik_game import *
+from economik_game.credit_func import *
+from economik_game.year import *
 
 
 router = Router()
@@ -19,14 +21,10 @@ class MyForm(StatesGroup):
     input_name = State()
     production_option = State()
     reference = State()
+    game_credit = State()
+    add_credit = State()
+    pay_for_credit = State()
 
-
-
-async def message_from_user(user_id, message):
-
-    """Отправка сообщения пользователю по id"""
-
-    await bot.send_message(user_id, message)
 
 
 
@@ -49,6 +47,14 @@ async def stop_all_op(message: types.Message, state: FSMContext):
 
 
 
+
+
+
+
+
+
+
+
 @router.message(StateFilter(None), F.text == '/game')
 async def start_game(message: types.Message, state: FSMContext):
 
@@ -56,6 +62,14 @@ async def start_game(message: types.Message, state: FSMContext):
 
     await message.answer("Вы хотите начать новую игру или присоединиться к существующей?", reply_markup=MyKeyboard.join_create())
     await state.set_state(MyForm.join_or_create)
+
+
+
+
+
+
+
+
 
 
 
@@ -92,6 +106,14 @@ async def step_start_1(message: types.Message, state: FSMContext):
 
 
 
+
+
+
+
+
+
+
+
 @router.message(MyForm.join_or_create, F.text == 'Присоединиться')
 async def join_to_lobby(message: types.Message, state: FSMContext):
 
@@ -99,6 +121,17 @@ async def join_to_lobby(message: types.Message, state: FSMContext):
 
     await message.answer('Введите id лобби к которому вы хотите подключиться', reply_markup=ReplyKeyboardRemove())
     await state.set_state(MyForm.input_id)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -134,6 +167,17 @@ async def input_id(message: types.Message, state: FSMContext):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 @router.message(MyForm.choice)
 async def choice(message: types.Message, state: FSMContext):
 
@@ -151,6 +195,16 @@ async def choice(message: types.Message, state: FSMContext):
         else:
             await message.answer('Выберете пожалуйста вариант из всплывающей клавиатуры')
             await state.set_state(MyForm.choice)
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -178,9 +232,18 @@ async def game(message: types.Message, state: FSMContext):
                     break
             else:
                 users_name[message.chat.id] = {'nik':message.text, 'username':message.chat.username}
-                #print(users_name)
                 await message.answer(f'Вы в игре под ником {message.text.strip()}', reply_markup=MyKeyboard.menu_in_game())
                 await state.set_state(MyForm.game)
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -202,11 +265,15 @@ async def game(message: types.Message, state: FSMContext):
         result_message = ''
         for i in game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'].items():
             result_message = result_message+f'{i[0]}: {i[1]}\n'
-        await message_from_user(message.chat.id, result_message)
+        await EconomicGame.message_from_user(message.chat.id, result_message)
 
     elif message.text == 'Повысить уровень производства':
         await message.answer('Выберете вариант производства, который вы хотели бы приобрести', reply_markup=MyKeyboard.product_option())
         await state.set_state(MyForm.production_option)
+
+    elif message.text == 'Кредит':
+        await message.answer('Выберете действие', reply_markup=MyKeyboard.credit())
+        await state.set_state(MyForm.game_credit)
 
     elif message.text == 'Cправка':
         await message.answer('Выберете какую информацию вы хотели бы получить', reply_markup=MyKeyboard.reference())
@@ -245,18 +312,96 @@ async def game(message: types.Message, state: FSMContext):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 @router.message(MyForm.production_option)
 async def prod_option(message: types.Message, state: FSMContext):
 
     result = EconomicGame.sold_on_rialto(message)
 
-    if result == 'Начался новый год!!!':
-        EconomicGame.new_year(users_l[message.chat.id])
-        users_id = list(game_db[users_l[message.chat.id]]['users'].keys())
-        await EconomicGame.message_from_list(message=result, users_id=users_id)
-
     await message.answer(result, reply_markup=MyKeyboard.menu_in_game())
+
+    if Years.new_year(message):
+        credit.choice_credit_bid(users_l[message.chat.id])
+        credit.new_year(message)
+        await EconomicGame.message_from_list('Начался новый год!!!', game_db[users_l[message.chat.id]]['users'].keys())
+
     await state.set_state(MyForm.game)
+
+
+
+
+@router.message(MyForm.game_credit)
+async def with_credit(message: types.Message, state: FSMContext):
+
+    """ Взаимодейтвие с кредитом """
+
+    if message.text == 'Назад':
+        await message.answer('Вы вышли в основное меню игры', reply_markup=MyKeyboard.menu_in_game())
+        await state.set_state(MyForm.game)
+
+    elif message.text == 'Взять кредит':
+        await message.answer('Введите сумму кредита')
+        await state.set_state(MyForm.add_credit)
+
+    elif message.text == 'Заплатить по кредиту':
+        await message.answer('Введите сумму платежа')
+        await state.set_state(MyForm.pay_for_credit)
+
+    elif message.text == 'Посмотреть задолжность':
+        await message.answer(credit.show_user_credit(message))
+
+    elif message.text == 'Посмотреть ставку':
+        await message.answer(credit.show_credit_bid(message))
+
+
+
+
+
+
+
+
+
+@router.message(MyForm.add_credit)
+async def add_credit(message: types.Message, state: FSMContext):
+
+    """ Добавляет новый кредит """
+
+    await message.answer(credit.add_credit(message), reply_markup=MyKeyboard.menu_in_game())
+    await state.set_state(MyForm.game)
+
+
+
+
+
+
+
+@router.message(MyForm.pay_for_credit)
+async def pay_credit(message: types.Message, state: FSMContext):
+
+    """ Выполняет платеж по кредиту"""
+
+    await message.answer(credit.pay_credit(message), reply_markup=MyKeyboard.menu_in_game())
+    await state.set_state(MyForm.game)
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -295,18 +440,9 @@ async def prod_option(message: types.Message, state: FSMContext):
         result_message = ''
         for i in back_game['ресурсы'].items():
             result_message = result_message + f'{i[0]}: {i[1]}\n'
-        await message_from_user(message.chat.id, result_message)
+        await EconomicGame.message_from_user(message.chat.id, result_message)
 
     elif message.text == 'Назад':
 
         await message.answer('Вы вышли в игру', reply_markup=MyKeyboard.menu_in_game())
         await state.set_state(MyForm.game)
-
-
-
-@router.message(F.text == '/about_bot')
-async def about_bot(message: types.Message):
-
-    """Функция рассказывает о назначении бота"""
-
-    await message.answer("Этот бот был создан для облегчения поиска домашнего задания для студентов. Здесь его существенно проще найти, и не нужно ждуть пока тебе ответят твои друзья)")

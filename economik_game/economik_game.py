@@ -1,11 +1,15 @@
+from config import API_TOKEN
+from aiogram import Bot
 
-from main import bot, message_from_user
-game_db = {}
-users_l = {}
-users_name = {}
-from database_config import back_game
+from economik_game.credit_func import credit
+from economik_game.database_config import *
 
-class Game():
+
+
+
+bot = Bot(token=API_TOKEN)
+
+class EconomicGame():
 
     @staticmethod
     def create_lobby(message):
@@ -28,11 +32,18 @@ class Game():
 
             game_db[id_lobby] = {'users':{}}
 
-            Game.add_user_on_group(id_lobby, message)
+            EconomicGame.add_user_on_group(id_lobby, message)
+
+            credit.create(users_l[message.chat.id])
             return id_lobby
 
 
+    @staticmethod
+    async def message_from_user(user_id, message):
 
+        """Отправка сообщения пользователю по id"""
+
+        await bot.send_message(user_id, message)
 
     @staticmethod
     def add_user_on_group(id_lobby, message):
@@ -45,12 +56,6 @@ class Game():
         if id_lobby in game_db.keys():
             users_l[message.chat.id] = id_lobby
             game_db[id_lobby]['users'][message.chat.id] = {
-                'лицевой счет': {
-                    'приход': 0,
-                    'расход': 0,
-                    'остаток': 0
-                },
-
                 'ресурсы': {
                     'деньги': 0,
                     'эк_рес': 0,
@@ -60,16 +65,28 @@ class Game():
                     'сырье': 0,
                     'рабочие': 0,
                     'транспорт': 0
-                }
+                },
+                'credit':{
+                    '25%':0,
+                    '50%':0
+                },
+                'ready':False
             }
             return 'Вы успешно добавленны в игру'
         else:
             return 'Вы ввели неправильно id лобби'
 
+
+
+
+
+
+
     @staticmethod
     def add_operation(message, nik_user_2=None, text=None):
 
         """сохраняет данные об финансовых операциях"""
+
         id_user_2 = None
 
         for i in users_name.items():
@@ -107,6 +124,12 @@ class Game():
 
 
 
+
+
+
+
+
+
     @staticmethod
     async def message_from_list(message, users_id, but_id=None):
 
@@ -117,6 +140,16 @@ class Game():
                 continue
             # Отправляем сообщение каждому пользователю
             await bot.send_message(user_id, message)
+
+
+
+
+
+
+
+
+
+
 
 
     @staticmethod
@@ -134,6 +167,18 @@ class Game():
 
         else:
             return False
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     @staticmethod
@@ -172,7 +217,7 @@ class Game():
 
             game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][string[1]] += int(string[2])
 
-            Game.add_operation(message, text=text)
+            EconomicGame.add_operation(message, text=text)
 
             return 'Успешно'
 
@@ -211,9 +256,21 @@ class Game():
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
 
         if string[0] != 'биржа':
-            Game.add_operation(message, nik_user_2=string[0])
+            EconomicGame.add_operation(message, nik_user_2=string[0])
 
         return 'Успешно'
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -257,7 +314,7 @@ class Game():
 
             game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][string[1]] -= int(string[2])
 
-            Game.add_operation(message, text=text)
+            EconomicGame.add_operation(message, text=text)
 
             return 'Успешно'
 
@@ -292,8 +349,23 @@ class Game():
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
 
         if string[0] != 'биржа':
-            Game.add_operation(message.text, nik_user_2=string[0])
+            EconomicGame.add_operation(message.text, nik_user_2=string[0])
         return 'Успешно'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -324,9 +396,20 @@ class Game():
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
         game_db[users_l[user_id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
 
-        Game.add_operation(message, nik_user_2=string[0])
+        EconomicGame.add_operation(message, nik_user_2=string[0])
 
         return 'Успешно'
+
+
+
+
+
+
+
+
+
+
+
 
     @staticmethod
     async def show_operations(message):
@@ -334,7 +417,25 @@ class Game():
             text = '\n'.join(game_db['operations'][message.chat.id])
         except:
             text = 'Финансовых операций еще не проводилось'
-        await message_from_user(message.chat.id, text)
+        await EconomicGame.message_from_user(message.chat.id, text)
+
+
+
+
+    @staticmethod
+    def admin_res(message):
+
+        for i in game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'].keys():
+            game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] += 100000
+
+
+
+
+
+
+
+
+
 
 
     @staticmethod
@@ -348,16 +449,20 @@ class Game():
             return 'Данного типа производства несуществует, пожалуйста выберете из данных вариантов'
 
 
+        if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ready'] == True:
+            return 'Вы не можете совершать операции на бирже пока не закончится год (год заканчивается когда все игроки продали ресурсы на повышение производства'
+
+
         result = []
-        for i in tip['эк_рес'].keys():
+        for i in back_game['тех_карта'][message.text]['эк_рес'].keys():
 
 
-            if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] < tip['эк_рес'][i]:
+            if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] < back_game['тех_карта'][message.text]['эк_рес'][i]:
                 result.append(i)
 
         if result == []:
-            for i in tip['эк_рес'].keys():
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] -= tip['эк_рес'][i]
+            for i in back_game['тех_карта'][message.text]['эк_рес'].keys():
+                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы'][i] -= back_game['тех_карта'][message.text]['эк_рес'][i]
 
         else:
             text = 'Нехватает ресурсов: '
@@ -366,6 +471,34 @@ class Game():
 
 
 
-        game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] += tip['эк_рес']['выручка']
+        game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] += back_game['тех_карта'][message.text]['выручка']
+        game_db[users_l[message.chat.id]]['users'][message.chat.id]['ready'] = True
+
+
+        for i in game_db[users_l[message.chat.id]]['users'].keys():
+            if game_db[users_l[message.chat.id]]['users'][i]['ready'] == False:
+                break
+        else:
+            return 'Начался новый год!!!'
+
+        for i in game_db[users_l[message.chat.id]]['users'].keys():
+            game_db[users_l[message.chat.id]]['users'][i]['ready'] = False
+
+
 
         return 'Успешно'
+
+
+
+
+
+
+
+
+    @staticmethod
+    def new_year(id_lobby):
+
+        """ Позволяет пользователю вновь торгавать своими ресурсами """
+
+        for i in game_db[id_lobby]['users'].keys():
+            game_db[id_lobby]['users'][i]['ready'] = False

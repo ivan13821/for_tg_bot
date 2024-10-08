@@ -12,6 +12,15 @@ class MyKeyboard():
         return keyboard
 
     @staticmethod
+    def credit():
+        kb = [
+            [types.KeyboardButton(text="Взять кредит"), types.KeyboardButton(text="Заплатить по кредиту")],
+            [types.KeyboardButton(text="Посмотреть задолжность"), types.KeyboardButton(text="Назад"), types.KeyboardButton(text="Посмотреть ставку")]
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
+    @staticmethod
     def reference():
         kb = [
             [
@@ -80,6 +89,7 @@ class MyKeyboard():
             ],
             [
                 types.KeyboardButton(text="Cправка"),
+                types.KeyboardButton(text="Кредит"),
                 types.KeyboardButton(text="История")
             ]
         ]

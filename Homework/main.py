@@ -2,14 +2,14 @@ import logging
 from aiogram.fsm.state import StatesGroup, State
 
 from economik_game.economik_game import EconomicGame
-from func import *
+from Homework.func import *
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from economik_game.database_config import users
 from economik_game.keyboard import *
 from bot_config import *
-
+from Homework.database import *
 
 bot = Bot(token=API_TOKEN)
 
@@ -60,6 +60,12 @@ async def handle_message_for_broadcast(message: types.Message, state: FSMContext
 
 
 
+@router.message(F.text == '/about_bot')
+async def about_bot(message: types.Message):
+
+    """Функция рассказывает о назначении бота"""
+
+    await message.answer("Этот бот был создан для облегчения поиска домашнего задания для студентов. Здесь его существенно проще найти, и не нужно ждуть пока тебе ответят твои друзья)")
 
 
 
@@ -112,37 +118,37 @@ async def cmd_start(message: types.Message):
 
 
 
-# @dp.message(F.text)
-# async def input_message(message: types.Message):
-#
-#
-#
-#         if in_group(message):
-#
-#             if len(message.text.lower().split(';')) == 3:
-#                 if admin(message):
-#                     my_message = post_db(message)
-#                 else:
-#                     my_message = ['Для добавления задания вы должны обладать правами администратора']
-#             elif message.text.lower().split(':')[0] in ['мой пароль']:
-#                 my_message = [add_admin(message)]
-#             elif len(message.text.lower().split(';')) <= 2:
-#                 my_message = get_db(message)
-#             else:
-#                 my_message = 'Вы ввели неправильный шаблон'
-#
-#             for i in my_message:
-#                 await message.answer(i)
-#         else:
-#             await message.answer('Нужно сначала указать вашу группу')
+@router.message(F.text)
+async def input_message(message: types.Message):
+
+
+
+        if in_group(message):
+
+            if len(message.text.lower().split(';')) == 3:
+                if admin(message):
+                    my_message = post_db(message)
+                else:
+                    my_message = ['Для добавления задания вы должны обладать правами администратора']
+            elif message.text.lower().split(':')[0] in ['мой пароль']:
+                my_message = [add_admin(message)]
+            elif len(message.text.lower().split(';')) <= 2:
+                my_message = get_db(message)
+            else:
+                my_message = 'Вы ввели неправильный шаблон'
+
+            for i in my_message:
+                await message.answer(i)
+        else:
+            await message.answer('Нужно сначала указать вашу группу')
 
 
 
 
 
-# @dp.message()
-# async def error(message: types.Message):
-#     await message.answer('Вы отправили не текстовое сообщение')
+@router.message()
+async def error(message: types.Message):
+    await message.answer('Вы отправили не текстовое сообщение')
 
 
 

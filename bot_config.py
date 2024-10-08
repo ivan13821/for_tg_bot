@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-import main
-from game import main_game
+from Homework import main
+from economik_game import main_game
 from config import *
 
 
@@ -14,7 +14,7 @@ async def maiin():
 
     dp = Dispatcher()
 
-    dp.include_routers(main_game.router, main.router )
+    dp.include_routers(main_game.router, main.router)
     await dp.start_polling(bot)
 
 

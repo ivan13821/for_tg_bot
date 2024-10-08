@@ -2,6 +2,13 @@ testing_database = {}
 
 administrations = []
 
+
+game_db = {}
+users_l = {}
+users_name = {}
+credit_db = {}
+
+
 password = '12345'
 
 users = []
