@@ -87,7 +87,7 @@ class MyKeyboard():
             [types.KeyboardButton(text="А"),
              types.KeyboardButton(text="Б"),
              types.KeyboardButton(text="В"), ],
-            [types.KeyboardButton(text="Выйти в меню")]
+            [types.KeyboardButton(text="Выйти в меню"), types.KeyboardButton(text="admin")]
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
@@ -114,6 +114,35 @@ class MyKeyboard():
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
         return keyboard
 
+    @staticmethod
+    def groups():
+        kb = [
+            [types.KeyboardButton(text="Создать группу"), types.KeyboardButton(text="Присоединиться к группе")],
+            [types.KeyboardButton(text="Покинуть группу"), types.KeyboardButton(text="Игроки в группе"), types.KeyboardButton(text="Назад")]
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
+
+
+    @staticmethod
+    def game_for_admin():
+        kb = [
+            [
+                types.KeyboardButton(text="Выйти в меню"),
+                types.KeyboardButton(text="Ресурсы игрока")
+            ],
+            [
+                types.KeyboardButton(text="Список игроков"),
+                types.KeyboardButton(text="Cправка")
+            ],
+            [
+                types.KeyboardButton(text="Закончить игру"),
+            ]
+        ]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        return keyboard
+
 
 
 
@@ -126,7 +155,8 @@ class MyKeyboard():
         kb = [
             [
                 types.KeyboardButton(text="Выйти в меню"),
-                types.KeyboardButton(text="Мои ресурсы")
+                types.KeyboardButton(text="Мои ресурсы"),
+                types.KeyboardButton(text="Объединения")
             ],
             [
                 types.KeyboardButton(text="Список игроков"),
