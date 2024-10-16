@@ -64,15 +64,20 @@ class credit():
 
         bid = credit.show_credit_bid(message)
 
+        id_lobby = users_l[message.chat.id]
+
+
         if number is not None:
 
             summa = int(number)
 
             if bid == '25%':
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['25%'] += summa
+                game_db[id_lobby]['users'][message.chat.id]['credit']['25%'] += summa
 
             else:
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%'] += summa
+                game_db[id_lobby]['users'][message.chat.id]['credit']['50%'] += summa
+
+
             return 'кредит добавлен'
 
 
@@ -80,19 +85,32 @@ class credit():
             summa = int(message.text)
         except:
             return 'Вы ввели не число'
+
         if bid == '25%':
-            try:
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['25%'] += summa
-            except KeyError:
-                key = Group.user_in_group(message)
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['25%'] += summa
+
+            if name_group := Group.user_in_group(message):
+
+                game_db[id_lobby]['users'][name_group]['credit']['25%'] += summa
+                game_db[id_lobby]['users'][name_group]['ресурсы']['деньги'] += summa
+
+            else:
+                game_db[id_lobby]['users'][message.chat.id]['credit']['25%'] += summa
+                game_db[id_lobby]['users'][message.chat.id]['ресурсы']['деньги'] += summa
 
         else:
-            try:
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%'] += summa
-            except KeyError:
-                key = Group.user_in_group(message)
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['50%'] += summa
+
+            if name_group := Group.user_in_group(message):
+
+                game_db[id_lobby]['users'][name_group]['credit']['50%'] += summa
+                game_db[id_lobby]['users'][name_group]['ресурсы']['деньги'] += summa
+
+                return 'Кредит добавлен'
+
+
+            else:
+                game_db[id_lobby]['users'][message.chat.id]['credit']['50%'] += summa
+                game_db[id_lobby]['users'][message.chat.id]['ресурсы']['деньги'] += summa
+
 
 
         return 'Кредит добавлен'

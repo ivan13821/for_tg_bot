@@ -4,7 +4,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
-from Homework.database import get_db
+
 from economik_game.keyboard import *
 from economik_game.economik_game import *
 from economik_game.credit_func import *
@@ -33,55 +33,8 @@ class MyForm(StatesGroup):
     create_group = State()
     join_to_group = State()
     get_res = State()
-
-
-
-
-@router.message(MyForm.stop_op)
-async def stop_all_op(message: types.Message, state: FSMContext):
-
-    """"Удаление пользователя из БД"""
-
-    id_lobby = users_l[message.chat.id]
-
-    try:
-        del game_db[id_lobby]['users'][message.chat.id]
-    except KeyError:
-        pass
-
-    try:
-        admins[id_lobby].remove(message.chat.id)
-
-        if admins[id_lobby] == []:
-            del admins[id_lobby]
-
-    except KeyError:
-        pass
-
-
-    try:
-        groups[id_lobby][Group.user_in_group(message)].remove(message.chat.id)
-
-        if not groups[id_lobby][Group.user_in_group(message)]:
-            del groups[id_lobby][Group.user_in_group(message)]
-
-        if not not groups[id_lobby]:
-            del groups[id_lobby]
-
-    except KeyError:
-        pass
-
-
-    del users_l[message.chat.id]
-
-    if game_db[id_lobby]['users'] == {}:
-        del game_db[id_lobby]
-
-
-
-    await state.clear()
-
-    await message.answer('Все ваши операции связанные с игрой завершены', reply_markup=MyKeyboard.menu())
+    are_you_admin = State()
+    input_password_for_admin = State()
 
 
 
@@ -180,30 +133,41 @@ async def input_id(message: types.Message, state: FSMContext):
     """Получение id"""
 
     if message.text == 'Выйти в меню':
-        await stop_all_op(message, state)
+        await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
+        await state.clear()
     else:
         result_add = EconomicGame.add_user_on_lobby(message.text, message)
 
-        await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
-        if result_add == 'Вы успешно добавленны в игру':
-            #await EconomicGame.message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
-            await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры', reply_markup=MyKeyboard.A_B_C())
-            await message.answer('Вариант А\n'
-                                 'деньги: 4000\n'
-                                 'Здание: 7 ед\n'
-                                 'Сырье: 30 ед\n'
-                                 '\n'
-                                 'Вариант Б\n'
-                                 'Деньги: 4000\n'
-                                 'Оборудование: 14 ед\n'
-                                 'Рабочие: 18 ед\n'
-                                 '\n'
-                                 'Вариант В\n'
-                                 'Деньги: 4000\n'
-                                 'Технология: 10 ед\n'
-                                 'Транспорт: 12 ед\n')
 
-            await state.set_state(MyForm.choice)
+
+        #Если пользователь хочет зайти под админом то ему это разрешаем если нет то он не может зайти
+        if result_add == 'Вы не можете зайти в игру, т.к в игре прошло уже больше года игрового времени':
+            await message.answer('Вы хотите зайти как админ?', reply_markup=MyKeyboard.yes_or_no())
+            await state.set_state(MyForm.are_you_admin)
+
+
+        else:
+
+            await message.answer(result_add, reply_markup=MyKeyboard.back_on_menu())
+            if result_add == 'Вы успешно добавленны в игру':
+                #await EconomicGame.message_from_list(f'К игре присоединился: {message.chat.username}', list(game_db[int(message.text)]['users'].keys()), but_id=message.chat.id)
+                await message.answer('Выберете пожалуйста кокой вариант ресурсов вы хотели бы получить при начале игры', reply_markup=MyKeyboard.A_B_C())
+                await message.answer('Вариант А\n'
+                                     'деньги: 4000\n'
+                                     'Здание: 7 ед\n'
+                                     'Сырье: 30 ед\n'
+                                     '\n'
+                                     'Вариант Б\n'
+                                     'Деньги: 4000\n'
+                                     'Оборудование: 14 ед\n'
+                                     'Рабочие: 18 ед\n'
+                                     '\n'
+                                     'Вариант В\n'
+                                     'Деньги: 4000\n'
+                                     'Технология: 10 ед\n'
+                                     'Транспорт: 12 ед\n')
+
+                await state.set_state(MyForm.choice)
 
 
 
@@ -225,15 +189,14 @@ async def choice(message: types.Message, state: FSMContext):
 
     if message.text == 'admin':
 
-        EconomicGame.add_admin(message)
 
-        await message.answer('Вы добавлены в игру как администратор', reply_markup=MyKeyboard.game_for_admin())
-        await state.set_state(MyForm.game)
+        await message.answer('Введите пароль для админа', reply_markup=MyKeyboard.back_on_menu())
+        await state.set_state(MyForm.input_password_for_admin)
 
 
     else:
         if message.text == 'Выйти в меню':
-            await stop_all_op(message, state)
+            await EconomicGame.clear_user(message.chat.id, state)
 
         else:
             result = EconomicGame.add_start_res(message)
@@ -265,7 +228,7 @@ async def input_name(message: types.Message, state: FSMContext):
     """Пользователь пишет свой ник"""
 
     if message.text == 'Выйти в меню':
-        await stop_all_op(message, state)
+        await EconomicGame.clear_user(message.chat.id, state)
 
     else:
 
@@ -274,13 +237,15 @@ async def input_name(message: types.Message, state: FSMContext):
             await state.set_state(MyForm.input_name)
         else:
 
-            for i in users_name.keys():
-                if users_name[i]['nik'] == message.text:
+            for i in users_name[users_l[message.chat.id]].keys():
+                if users_name[users_l[message.chat.id]][i]['nik'] == message.text:
                     await message.answer('К сожалению этот ник уже занят, напишите пожалуйста другой')
                     await state.set_state(MyForm.input_name)
                     break
             else:
-                users_name[message.chat.id] = {'nik':message.text, 'username':message.chat.username}
+                #print(users_name)
+                users_name[users_l[message.chat.id]][message.chat.id] = {'nik':message.text, 'username':message.chat.username}
+                print(users_name)
                 await message.answer(f'Вы в игре под ником {message.text.strip()}', reply_markup=MyKeyboard.menu_in_game())
                 await state.set_state(MyForm.game)
 
@@ -409,7 +374,7 @@ async def game(message: types.Message, state: FSMContext):
 
         await EconomicGame.show_winner(users_l[message.chat.id], message=message)
 
-        del game_db[users_l[message.chat.id]]
+        EconomicGame.all_clear(users_l[message.chat.id])
 
 
 
@@ -419,11 +384,12 @@ async def game(message: types.Message, state: FSMContext):
 
         result = ''
         for i in game_db[users_l[message.chat.id]]['users'].keys():
+            print(users_name)
             try:
-                result += f'{users_name[i]['username']}: {users_name[i]['nik']}\n'
+                result += f'{users_name[users_l[message.chat.id]][i]['username']}: {users_name[users_l[message.chat.id]][i]['nik']}\n'
             except KeyError:
                 for j in groups[users_l[message.chat.id]][i]:
-                    result += f'{users_name[j]['username']}: {users_name[j]['nik']} (В группе: {i})\n'
+                    result += f'{users_name[users_l[message.chat.id]][j]['username']}: {users_name[users_l[message.chat.id]][j]['nik']} (В группе: {i})\n'
 
         await message.answer(result)
 
@@ -446,7 +412,7 @@ async def get_res_from_admin(message: types.Message, state: FSMContext):
 
     user_id = None
 
-    for i in users_name.items():
+    for i in users_name[users_l[message.chat.id]].items():
         if i[1]['nik'] == message.text:
             user_id = i[0]
             break
@@ -564,13 +530,80 @@ async def create_group(message: types.Message, state: FSMContext):
 
 
 
+@router.message(MyForm.are_you_admin)
+async def check_admin(message: types.Message, state: FSMContext):
+
+    """ Проверяем хочет ли пользователь зайти как админ или как пользователь если прошло больше года"""
+
+    text = message.text.lower()
+
+    if text == 'да':
+
+        await message.answer('Введите пароль для админа', reply_markup=MyKeyboard.back_on_menu())
+        await state.set_state(MyForm.input_password_for_admin)
+
+
+
+    elif text == 'нет':
+
+        await EconomicGame.clear_user(message.chat.id, state)
+        print(admins)
+        await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
+        await state.clear()
+
+    else:
+        await message.answer('Выберете, пожалуйста, вариант из всплывающей клавиатуры')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@router.message(MyForm.input_password_for_admin)
+async def input_password_for_admin(message: types.Message, state: FSMContext):
+
+    """Ввод пароля для админа """
+
+    if message.text == password_for_admin:
+
+        result = EconomicGame.add_admin(message)
+
+
+        await message.answer(result, reply_markup=MyKeyboard.game_for_admin())
+        await state.set_state(MyForm.game)
+
+    elif message.text == 'Выйти в меню':
+        await EconomicGame.clear_user(message.chat.id, state)
+        print(admins)
+
+    else:
+        await message.answer('Вы ввели неправильный пароль')
+
+
+
+
+
+
+
+
+
 @router.message(MyForm.want_exit)
 async def want_exit(message: types.Message, state: FSMContext):
 
     """Проверяет хочет ли пользователь выйти или хочет вернуться в игру"""
 
     if message.text == 'Да':
-        await stop_all_op(message, state)
+        await EconomicGame.clear_user(message.chat.id, state)
 
     elif message.text == 'Нет':
         await message.answer('Вы вернулись в игру', reply_markup=MyKeyboard.menu_in_game())
@@ -726,5 +759,9 @@ async def prod_option(message: types.Message, state: FSMContext):
         except KeyError:
             await message.answer('Вы вышли в игру', reply_markup=MyKeyboard.menu_in_game())
             await state.set_state(MyForm.game)
+
+    else:
+        await message.answer('К сожалению я не знаю такой команды', reply_markup=MyKeyboard.menu_in_game())
+        await state.set_state(MyForm.game)
 
 

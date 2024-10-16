@@ -12,7 +12,7 @@ admins = {}
 
 
 
-password = '12345'
+password_for_admin = '395166'
 
 users = []
 

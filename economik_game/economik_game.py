@@ -4,6 +4,7 @@ from aiogram import Bot
 from economik_game.credit_func import credit
 from economik_game.database_config import *
 from economik_game.for_group import Group
+from economik_game.keyboard import MyKeyboard
 
 bot = Bot(token=API_TOKEN)
 
@@ -37,30 +38,144 @@ class EconomicGame():
 
             game_db[id_lobby]['operations'] = {}
 
+            users_name[id_lobby] = {}
+
             return id_lobby
 
 
 
+    @staticmethod
+    def all_clear(id_lobby):
+
+        """Удаляет все данные связанные с лобби"""
+
+        #удаление groups
+        try:
+            del groups[id_lobby]
+        except KeyError:
+            pass
 
 
+        #удаление admins
+        try:
+            del admins[id_lobby]
+        except KeyError:
+            pass
+
+
+        #удаление credit_db
+        del credit_db[id_lobby]
+
+
+
+
+        #удаление users_name
+        try:
+            del users_name[id_lobby]
+        except KeyError:
+            pass
+
+
+
+        #удаление game_db
+        del game_db[id_lobby]
+
+
+
+        #удаление users_l
+        for i in list(users_l.items()):
+
+            if i[1] == id_lobby:
+                del users_l[i[0]]
+
+    @staticmethod
+    async def clear_user(chat_id, state):
+
+        """ Функция для очистки баз данных от определенного пользователя"""
+
+
+        id_lobby = users_l[chat_id]
+
+        # удаление из groups
+        # if not groups:
+        #     for i in groups[id_lobby].items():
+        #         if chat_id in i[1]:
+        #             groups[id_lobby][i[0]].remove(chat_id)
+        #             if not groups[id_lobby][i[0]]:
+        #                 del groups
+
+
+        # удаление из admins
+        if not admins:
+            try:
+                if chat_id in admins[id_lobby]:
+                    admins[id_lobby].remove(chat_id)
+
+                    if not admins[id_lobby]:
+                        del admins[id_lobby]
+            except KeyError:
+                pass
+
+
+        # удаление из users_name
+        try:
+            del users_name[id_lobby][chat_id]
+
+        except KeyError:
+            pass
+
+        finally:
+            # Если лобби пустое удаляем его
+            try:
+                if not users_name[id_lobby]:
+                    del users_name[id_lobby]
+            except KeyError:
+                pass
+
+
+        # удаление из game_db
+        try:
+            del game_db[id_lobby]['users'][chat_id]
+
+        except KeyError:
+            pass
+
+        finally:
+            # Если лобби пустое удаляем его
+            try:
+                if not game_db[id_lobby]['users']:
+                    del game_db[id_lobby]
+            except KeyError:
+                pass
+
+
+        # удаление из users_l
+        try:
+            del users_l[chat_id]
+        except KeyError:
+            pass
+
+        await state.clear()
+        await bot.send_message(chat_id=chat_id, text='Вы вышли из игры', reply_markup=MyKeyboard.menu())
 
 
 
 
     @staticmethod
-    def cost_all_res(chat_id):
+    def cost_all_res(chat_id, id_lobby):
 
         """Возвращает стоимость всех ресурсов в наличии у игрока"""
 
 
         result = 0
 
-        for i in game_db[users_l[chat_id]]['users'][chat_id]['ресурсы'].items():
+
+        for i in game_db[id_lobby]['users'][chat_id]['ресурсы'].items():
 
             if i[0] == 'деньги':
                 result += int(i[1])
             else:
-                result += back_game['ресурсы'][i[0]]*int(i[1])
+                result += int(back_game['ресурсы'][i[0]])*int(i[1])
 
         return result
 
@@ -82,10 +197,10 @@ class EconomicGame():
 
         for i in game_db[id_lobby]['users'].keys():
 
-            res = EconomicGame.cost_all_res(i)
+            res = EconomicGame.cost_all_res(i, id_lobby)
 
             if res > maxi:
-                name_winner = users_name[i]['nik']
+                name_winner = users_name[id_lobby][i]['nik']
                 maxi = res
 
         name_winner = f'Игра законченна победитель: {name_winner} результат {maxi}'
@@ -130,9 +245,14 @@ class EconomicGame():
         except:
             return 'id должен состоять из цифр'
 
+        if id_lobby not in game_db.keys():
+            return 'Такого id не существует'
+
 
         # Проверка не был ли закончен 1 год, если да то пользователь не может зайти
         if credit.show_credit_bid(message, id_lobby=id_lobby) == '50%':
+            users_l[message.chat.id] = id_lobby
+
             return 'Вы не можете зайти в игру, т.к в игре прошло уже больше года игрового времени'
 
 
@@ -183,45 +303,54 @@ class EconomicGame():
 
         id_user_2 = None
 
+        id_lobby = users_l[message.chat.id]
+
 
 
         if Group.user_in_group(message):
             user_id = Group.user_in_group(message)
+            user_chat_id = message.chat.id
         else:
             user_id = message.chat.id
+            user_chat_id = user_id
 
 
 
         if nik_user_2 is not None:
-            for i in users_name.items():
+            for i in users_name[users_l[user_id]].items():
                 if i[1]['nik'] == nik_user_2:
                     id_user_2 = i[0]
                     break
 
+
+        #Добавляем операцию для 2го пользователя если он есть
         if not(id_user_2 == None):
             if text == None:
                 try:
-                    game_db[users_l[message.chat.id]]['operations'][id_user_2].append(f'{users_name[user_id]['nik']}: {message.text}')
+                    game_db[id_lobby]['operations'][id_user_2].append(f'{users_name[id_lobby][user_id]['nik']}: {message.text}')
                 except:
-                    game_db[users_l[message.chat.id]]['operations'][id_user_2] = [f'{users_name[user_id]['nik']}: {message.text}']
+                    game_db[id_lobby]['operations'][id_user_2] = [f'{users_name[id_lobby][user_id]['nik']}: {message.text}']
 
             else:
                 try:
-                    game_db[users_l[message.chat.id]]['operations'][id_user_2].append(f'{users_name[user_id]['nik']}: {text}')
+                    game_db[id_lobby]['operations'][id_user_2].append(f'{users_name[id_lobby][user_id]['nik']}: {text}')
                 except:
-                    game_db[users_l[message.chat.id]]['operations'][id_user_2] = [f'{users_name[user_id]['nik']}: {text}']
+                    game_db[id_lobby]['operations'][id_user_2] = [f'{users_name[id_lobby][user_id]['nik']}: {text}']
 
+
+
+        #Добавляем операцию для пользователя, который отправил сообщение
         if text == None:
             try:
-                game_db[users_l[message.chat.id]]['operations'][user_id].append(f'{users_name[user_id]['nik']}: {message.text}')
+                game_db[id_lobby]['operations'][user_id].append(f'{users_name[id_lobby][user_id]['nik']}: {message.text}')
             except:
-                game_db[users_l[message.chat.id]]['operations'][user_id] = [f'{users_name[user_id]['nik']}: {message.text}']
+                game_db[id_lobby]['operations'][user_id] = [f'{users_name[id_lobby][user_id]['nik']}: {message.text}']
 
         else:
             try:
-                game_db[users_l[message.chat.id]]['operations'][user_id].append(f'{users_name[user_id]['nik']}: {text}')
+                game_db[id_lobby]['operations'][user_id].append(f'{users_name[id_lobby][user_id]['nik']}: {text}')
             except:
-                game_db[users_l[message.chat.id]]['operations'][user_id] = [f'{users_name[user_id]['nik']}: {text}']
+                game_db[id_lobby]['operations'][user_id] = [f'{users_name[id_lobby][user_id]['nik']}: {text}']
 
 
 
@@ -286,7 +415,7 @@ class EconomicGame():
         except:
             admins[users_l[message.chat.id]] = [message.chat.id]
 
-        return 'Успешно'
+        return 'Вы добавлены в игру как администратор'
 
 
 
@@ -332,7 +461,7 @@ class EconomicGame():
         # | действие | пользователь | ресурс | количество | цена
 
 
-        string = message.text.strip().split()[1::]
+        string = message.text.lower().strip().split()[1::]
 
         if Group.user_in_group(message):
             user_id = Group.user_in_group(message)
@@ -360,6 +489,8 @@ class EconomicGame():
 
             cost = cost * int(string[2])
 
+            text += f'на сумму {cost}'
+
             if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
 
             game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] -= cost
@@ -377,7 +508,7 @@ class EconomicGame():
 
 
         #found nik
-        for i in users_name.items():
+        for i in users_name[users_l[user_id]].items():
             if i [1]['nik'] == string[0]:
                 another_user_id = i[0]
                 break
@@ -434,7 +565,7 @@ class EconomicGame():
 
         """Продажа ресурсов на биржу или другому игроку"""
 
-        string = message.text.strip().split()[1::]
+        string = message.text.lower().strip().split()[1::]
 
         if Group.user_in_group(message):
             user_id = Group.user_in_group(message)
@@ -453,13 +584,18 @@ class EconomicGame():
                 return 'данного ресурса нет в перечне биржи, проверьте написание'
 
             if not string[2].isdigit(): return 'В позицию количества вы ввели не число'
+
             text = message.text.split()
 
-            text.append(str(cost))
 
 
             cost = cost * int(string[2])
-            text = ' '.join(message.text.split().append(string[1]))
+
+            text.pop(-1)
+
+            text.append(str(cost))
+
+            text = f'{text[0]} {text[1]} {text[2]} на сумму {text[3]}'
 
 
             if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ед. ресурса'
@@ -476,7 +612,7 @@ class EconomicGame():
             return 'Неверное количество составляющих. *Посмотрите шаблон*'
 
 
-        for i in users_name.items():
+        for i in users_name[users_l[user_id]].items():
             if i [1]['nik'] == string[0]:
                 another_user_id = i[0]
                 break
@@ -536,9 +672,9 @@ class EconomicGame():
         else:
             user_id = message.chat.id
 
-        string = message.text.strip().split()[1::]
+        string = message.text.lower().strip().split()[1::]
 
-        for i in users_name.items():
+        for i in users_name[users_l[user_id]].items():
             if i [1]['nik'] == string[0]:
                 another_user_id = i[0]
                 break

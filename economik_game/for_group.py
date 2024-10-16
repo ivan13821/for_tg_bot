@@ -28,7 +28,7 @@ class Group():
         groups[id_lobby] = {}
         groups[id_lobby][name] = [message.chat.id]
 
-        users_name[message.text] = {'nik':message.text, 'username':'Группа'}
+        users_name[users_l[message.chat.id]][message.text] = {'nik':message.text, 'username':'Группа'}
 
 
 
@@ -36,7 +36,6 @@ class Group():
         game_db[id_lobby]['users'][name] = {
             'ресурсы': {
                 'деньги': 0,
-                'эк_рес': 0,
                 'здание': 0,
                 'оборудование': 0,
                 'технология': 0,
@@ -86,7 +85,6 @@ class Group():
         id_lobby = users_l[message.chat.id]
 
         name = message.text
-        print(groups)
 
         try:
             let = groups[id_lobby][name]
@@ -94,8 +92,11 @@ class Group():
             return 'Группы с таким названием не существует'
 
 
+        if name_group := Group.user_in_group(message):
+            return f'Вы уже состоите в группе {name_group}'
 
         groups[id_lobby][name].append(message.chat.id)
+
 
         for i in game_db[id_lobby]['users'][message.chat.id]['ресурсы'].keys():
             game_db[id_lobby]['users'][name]['ресурсы'][i] += game_db[id_lobby]['users'][message.chat.id]['ресурсы'][i]
@@ -214,12 +215,10 @@ class Group():
             return 'Вы не состоите в группе'
 
         result = ''
-        for i in game_db[users_l[message.chat.id]]['users'].keys():
-            try:
-                result += f'{users_name[i]['username']}: {users_name[i]['nik']}\n'
-            except KeyError:
-                for j in groups[users_l[message.chat.id]][i]:
-                    result += f'{users_name[j]['username']}: {users_name[j]['nik']}\n'
+        for i in groups[users_l[message.chat.id]][name]:
+
+            result += f'{users_name[users_l[message.chat.id]][i]['username']}: {users_name[users_l[message.chat.id]][i]['nik']}\n'
+
 
         return result
 
