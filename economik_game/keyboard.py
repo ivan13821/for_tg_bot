@@ -45,7 +45,7 @@ class MyKeyboard():
     def reference():
         kb = [
             [
-                types.KeyboardButton(text="Биржа"), types.KeyboardButton(text="Тех. карта")
+                types.KeyboardButton(text="Цены на бирже"), types.KeyboardButton(text="Ресурсы для повышения производства")
             ],
             [
                 types.KeyboardButton(text="Шаблоны"), types.KeyboardButton(text="Назад")
@@ -69,7 +69,7 @@ class MyKeyboard():
                 types.KeyboardButton(text="25%"), types.KeyboardButton(text="50%")
             ],
             [
-                types.KeyboardButton(text="100%")
+                types.KeyboardButton(text="100%"), types.KeyboardButton(text="Назад")
             ],
         ]
         keyboard = types.ReplyKeyboardMarkup(keyboard=kb)

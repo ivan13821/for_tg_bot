@@ -1,4 +1,4 @@
-from economik_game.database_config import game_db, users_l, users_name
+from economik_game.database_config import game_db, users_l
 from economik_game.for_group import Group
 
 

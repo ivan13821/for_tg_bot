@@ -120,73 +120,49 @@ class credit():
 
         """ Пользователь платит за взятый кредит сначала за кредит под 50% после за кредит под 25% """
 
+        #Получение id пользователя или группы
+        if chat_id := Group.user_in_group(message):
+            chat_id = chat_id
+        else:
+            chat_id = message.chat.id
+
+
+        #Получение id лобби
+        id_lobby = users_l[message.chat.id]
+
+
+
         try:
+            pay = int(message.text)
+        except:
+            return 'Вы ввели не число'
 
-            try:
-                pay = int(message.text)
-            except:
-                return 'Вы ввели не число'
+        if game_db[id_lobby]['users'][chat_id]['ресурсы']['деньги'] < pay:
+            return 'Вам не хватает денег'
 
-            if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] < pay:
-                return 'Вам не хватает денег'
+        if pay > game_db[id_lobby]['users'][chat_id]['credit']['50%']:
 
-            if pay > game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%']:
+            pay -= game_db[id_lobby]['users'][chat_id]['credit']['50%']
+            game_db[id_lobby]['users'][chat_id]['ресурсы']['деньги'] -= game_db[id_lobby]['users'][chat_id]['credit']['50%']
+            game_db[id_lobby]['users'][chat_id]['credit']['50%'] = 0
 
-                pay -= game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%']
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] -= game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%']
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%'] = 0
-
-            else:
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] -= pay
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%'] -= pay
-                return 'Успешно'
+        else:
+            game_db[id_lobby]['users'][chat_id]['ресурсы']['деньги'] -= pay
+            game_db[id_lobby]['users'][chat_id]['credit']['50%'] -= pay
+            return 'Успешно'
 
 
 
-            if pay > game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['25%']:
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] -= game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['25%']
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['50%'] = 0
-                return 'Деньги которые вы переплатили мы вам вернули'
+        if pay > game_db[id_lobby]['users'][chat_id]['credit']['25%']:
+            game_db[id_lobby]['users'][chat_id]['ресурсы']['деньги'] -= game_db[id_lobby]['users'][chat_id]['credit']['25%']
+            game_db[id_lobby]['users'][chat_id]['credit']['25%'] = 0
+            return 'Деньги которые вы переплатили мы вам вернули'
 
-            else:
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['ресурсы']['деньги'] -= pay
-                game_db[users_l[message.chat.id]]['users'][message.chat.id]['credit']['25%'] -= pay
-                return 'Успешно'
+        else:
+            game_db[id_lobby]['users'][chat_id]['ресурсы']['деньги'] -= pay
+            game_db[id_lobby]['users'][chat_id]['credit']['25%'] -= pay
+            return 'Успешно'
 
-        except KeyError:
-
-            try:
-                pay = int(message.text)
-            except:
-                return 'Вы ввели не число'
-
-            key = Group.user_in_group(message)
-
-            if game_db[users_l[message.chat.id]]['users'][key]['ресурсы']['деньги'] < pay:
-                return 'Вам не хватает денег'
-
-            if pay > game_db[users_l[message.chat.id]]['users'][key]['credit']['50%']:
-
-                pay -= game_db[users_l[message.chat.id]]['users'][key]['credit']['50%']
-                game_db[users_l[message.chat.id]]['users'][key]['ресурсы']['деньги'] -= \
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['50%']
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['50%'] = 0
-
-            else:
-                game_db[users_l[message.chat.id]]['users'][key]['ресурсы']['деньги'] -= pay
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['50%'] -= pay
-                return 'Успешно'
-
-            if pay > game_db[users_l[message.chat.id]]['users'][key]['credit']['25%']:
-                game_db[users_l[message.chat.id]]['users'][key]['ресурсы']['деньги'] -= \
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['25%']
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['50%'] = 0
-                return 'Деньги которые вы переплатили мы вам вернули'
-
-            else:
-                game_db[users_l[message.chat.id]]['users'][key]['ресурсы']['деньги'] -= pay
-                game_db[users_l[message.chat.id]]['users'][key]['credit']['25%'] -= pay
-                return 'Успешно'
 
 
     @staticmethod

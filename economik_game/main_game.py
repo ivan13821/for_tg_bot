@@ -10,7 +10,7 @@ from economik_game.economik_game import *
 from economik_game.credit_func import *
 from economik_game.year import *
 from economik_game.for_group import *
-
+from economik_game.database_config import *
 
 
 router = Router()
@@ -233,7 +233,10 @@ async def input_name(message: types.Message, state: FSMContext):
     else:
 
         if len(list(message.text)) > 10:
-            await message.answer(f'Введите пожалуста ник до 10 символов')
+            await message.answer(f'Введите пожалуйста ник до 10 символов')
+            await state.set_state(MyForm.input_name)
+        elif not message.text.strip().isalpha():
+            await message.answer(f'В вашем имени не должно быть других символов кроме букв')
             await state.set_state(MyForm.input_name)
         else:
 
@@ -627,20 +630,27 @@ async def prod_option(message: types.Message, state: FSMContext):
 
     """ Повышает уровень производства и, если нужно отправляет всем пользователям в группе уведомление о начале нового года """
 
-    result = EconomicGame.sold_on_rialto(message)
+    if message.text == 'Назад':
+
+        await message.answer('Вы вышли в основное меню игры', reply_markup=MyKeyboard.menu_in_game())
+        await state.set_state(MyForm.game)
 
 
-    await message.answer(result, reply_markup=MyKeyboard.menu_in_game())
+    else:
+        result = EconomicGame.sold_on_rialto(message)
 
-    if result == 'Успешно':
-        EconomicGame.add_operation(message, text=f'Повышение уровня производства на {message.text}')
 
-    if Years.new_year(message):
-        credit.choice_credit_bid(users_l[message.chat.id])
-        credit.new_year(message)
-        await EconomicGame.message_from_list('Начался новый год!!!', game_db[users_l[message.chat.id]]['users'].keys(), main_message=message)
+        await message.answer(result, reply_markup=MyKeyboard.menu_in_game())
 
-    await state.set_state(MyForm.game)
+        if result == 'Успешно':
+            EconomicGame.add_operation(message, text=f'Повышение уровня производства на {message.text}')
+
+        if Years.new_year(message):
+            credit.choice_credit_bid(users_l[message.chat.id])
+            credit.new_year(message)
+            await EconomicGame.message_from_list('Начался новый год!!!', game_db[users_l[message.chat.id]]['users'].keys(), main_message=message)
+
+        await state.set_state(MyForm.game)
 
 
 
@@ -713,12 +723,12 @@ async def pay_credit(message: types.Message, state: FSMContext):
 @router.message(MyForm.reference)
 async def prod_option(message: types.Message, state: FSMContext):
 
-    if message.text == 'Тех. карта':#Информация о этапах производства и нужных для этого ресурсах
+    if message.text == 'Ресурсы для повышения производства':#Информация о этапах производства и нужных для этого ресурсах
 
 
         for i in back_game['тех_карта'].items():
             result_message = ''
-            result_message += '*'+i[0]+ '%' +'*'+'\n'+'*'+'экономические ресурсы:'+'*'+'\n'
+            result_message += '*'+i[0] +'*'+'\n'+'*'+'экономические ресурсы:'+'*'+'\n'
             for j in i[1]['эк_рес'].items():
                 result_message += j[0]+': '+str(j[1])+'\n'
 
@@ -736,12 +746,13 @@ async def prod_option(message: types.Message, state: FSMContext):
                              parse_mode="Markdown")
 
         await message.answer('Шаблон 2 (обмен ресурсами):\n'
-                             '| действие | 2 сторона | ресурс 1 | количество рес 1 | ресурс 2 | количество рес 2 | *ресурс 1 идет вам*|\n'
+                             '| обмен/обменять | 2 сторона | ресурс 1 | количество рес 1 | ресурс 2 | количество рес 2 | *ресурс 1 идет вам*|\n'
                              'Например\n'
-                             '*обмен олег сырье 7 оборудование 2*', parse_mode="Markdown")
+                             '*обмен олег сырье 7 оборудование 2*\n'
+                             '*обменять олег сырье 7 оборудование 2*', parse_mode="Markdown")
 
 
-    elif message.text == 'Биржа':#Информация о ценах на бирже
+    elif message.text == 'Цены на бирже':#Информация о ценах на бирже
         result_message = ''
         for i in back_game['ресурсы'].items():
             result_message = result_message + f'{i[0]}: {i[1]}\n'

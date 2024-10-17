@@ -460,6 +460,9 @@ class EconomicGame():
         """Покупка ресурсов у игрока или биржи"""
         # | действие | пользователь | ресурс | количество | цена
 
+        id_lobby = users_l[message.chat.id]
+
+
 
         string = message.text.lower().strip().split()[1::]
 
@@ -467,6 +470,10 @@ class EconomicGame():
             user_id = Group.user_in_group(message)
         else:
             user_id = message.chat.id
+
+
+        if game_db[id_lobby]['users'][user_id]['ready']:
+            return 'Вы не можете совершать операции на бирже пока не закончится год (год заканчивается когда все игроки продали ресурсы на повышение производства'
 
 
         if string[0] == 'биржа':
@@ -491,11 +498,11 @@ class EconomicGame():
 
             text += f'на сумму {cost}'
 
-            if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
+            if game_db[id_lobby]['users'][user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
 
-            game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] -= cost
+            game_db[id_lobby]['users'][user_id]['ресурсы']['деньги'] -= cost
 
-            game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
+            game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
 
             EconomicGame.add_operation(message, text=text)
 
@@ -525,15 +532,15 @@ class EconomicGame():
 
         cost = cost * int(string[2])
 
-        if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
+        if game_db[id_lobby]['users'][user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
 
-        if game_db[users_l[message.chat.id]]['users'][another_user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ресурсов'
+        if game_db[id_lobby]['users'][another_user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ресурсов'
 
-        game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] -= cost
-        game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
+        game_db[id_lobby]['users'][user_id]['ресурсы']['деньги'] -= cost
+        game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
 
-        game_db[users_l[message.chat.id]]['users'][another_user_id]['ресурсы']['деньги'] += cost
-        game_db[users_l[message.chat.id]]['users'][another_user_id]['ресурсы'][string[1]] -= int(string[2])
+        game_db[id_lobby]['users'][another_user_id]['ресурсы']['деньги'] += cost
+        game_db[id_lobby]['users'][another_user_id]['ресурсы'][string[1]] -= int(string[2])
 
         if string[0] != 'биржа':
             EconomicGame.add_operation(message, nik_user_2=string[0])
@@ -573,6 +580,13 @@ class EconomicGame():
             user_id = message.chat.id
 
 
+        id_lobby = users_l[message.chat.id]
+
+
+        if game_db[id_lobby]['users'][user_id]['ready']:
+            return 'Вы не можете совершать операции на бирже пока не закончится год (год заканчивается когда все игроки продали ресурсы на повышение производства'
+
+
         if string[0] == 'биржа':
 
             if len(string) != 3:
@@ -598,11 +612,11 @@ class EconomicGame():
             text = f'{text[0]} {text[1]} {text[2]} на сумму {text[3]}'
 
 
-            if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ед. ресурса'
+            if game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ед. ресурса'
 
-            game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] += cost
+            game_db[id_lobby]['users'][user_id]['ресурсы']['деньги'] += cost
 
-            game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
+            game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
 
             EconomicGame.add_operation(message, text=text)
 
@@ -629,14 +643,14 @@ class EconomicGame():
 
         cost = cost * int(string[2])
 
-        if game_db[users_l[message.chat.id]]['users'][another_user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
-        if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ресурсов'
+        if game_db[id_lobby]['users'][another_user_id]['ресурсы']['деньги'] < cost: return 'Недостаточно денег'
+        if game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'Недостаточно ресурсов'
 
-        game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы']['деньги'] += cost
-        game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
+        game_db[id_lobby]['users'][user_id]['ресурсы']['деньги'] += cost
+        game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] -= int(string[2])
 
-        game_db[users_l[message.chat.id]]['users'][another_user_id]['ресурсы']['деньги'] -= cost
-        game_db[users_l[message.chat.id]]['users'][another_user_id]['ресурсы'][string[1]] += int(string[2])
+        game_db[id_lobby]['users'][another_user_id]['ресурсы']['деньги'] -= cost
+        game_db[id_lobby]['users'][another_user_id]['ресурсы'][string[1]] += int(string[2])
 
         if string[0] != 'биржа':
             EconomicGame.add_operation(message.text, nik_user_2=string[0])
@@ -681,17 +695,23 @@ class EconomicGame():
         else:
             return 'Неправильный ник пользователя'
 
+        id_lobby = users_l[message.chat.id]
+
+
+        if game_db[id_lobby]['users'][user_id]['ready']:
+            return 'Вы не можете совершать операции на бирже пока не закончится год (год заканчивается когда все игроки продали ресурсы на повышение производства'
+
 
         if not string[2].isdigit(): return 'В позицию количества вы ввели не число'
 
-        if game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'У вас недостаточно ресурсов'
-        if game_db[users_l[user_id]]['users'][another_user_id]['ресурсы'][string[1]] < int(string[2]): return 'У 2 стороны недостаточно ресурсов'
+        if game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] < int(string[2]): return 'У вас недостаточно ресурсов'
+        if game_db[id_lobby]['users'][another_user_id]['ресурсы'][string[1]] < int(string[2]): return 'У 2 стороны недостаточно ресурсов'
 
-        game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
-        game_db[users_l[message.chat.id]]['users'][user_id]['ресурсы'][string[3]] -= int(string[4])
+        game_db[id_lobby]['users'][user_id]['ресурсы'][string[1]] += int(string[2])
+        game_db[id_lobby]['users'][user_id]['ресурсы'][string[3]] -= int(string[4])
 
-        game_db[users_l[user_id]]['users'][another_user_id]['ресурсы'][string[1]] -= int(string[2])
-        game_db[users_l[user_id]]['users'][another_user_id]['ресурсы'][string[1]] += int(string[2])
+        game_db[id_lobby]['users'][another_user_id]['ресурсы'][string[1]] -= int(string[2])
+        game_db[id_lobby]['users'][another_user_id]['ресурсы'][string[1]] += int(string[2])
 
         EconomicGame.add_operation(message, nik_user_2=string[0])
 
@@ -764,10 +784,10 @@ class EconomicGame():
             try:
                 tip = back_game['тех_карта'][message.text]
             except:
-                return 'Данного типа производства несуществует, пожалуйста выберете из данных вариантов'
+                return 'Данного типа производства не существует, пожалуйста выберете из данных вариантов'
 
 
-            if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ready'] == True:
+            if game_db[users_l[message.chat.id]]['users'][message.chat.id]['ready']:
                 return 'Вы не можете совершать операции на бирже пока не закончится год (год заканчивается когда все игроки продали ресурсы на повышение производства'
 
 
