@@ -97,12 +97,13 @@ class EconomicGame():
         id_lobby = users_l[chat_id]
 
         # удаление из groups
-        # if not groups:
-        #     for i in groups[id_lobby].items():
-        #         if chat_id in i[1]:
-        #             groups[id_lobby][i[0]].remove(chat_id)
-        #             if not groups[id_lobby][i[0]]:
-        #                 del groups
+        global groups
+        if groups:
+            for i in groups[id_lobby].items():
+                if chat_id in i[1]:
+                    groups[id_lobby][i[0]].remove(chat_id)
+                    if not groups[id_lobby][i[0]]:
+                        del groups
 
 
         # удаление из admins

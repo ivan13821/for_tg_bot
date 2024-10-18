@@ -246,9 +246,7 @@ async def input_name(message: types.Message, state: FSMContext):
                     await state.set_state(MyForm.input_name)
                     break
             else:
-                #print(users_name)
                 users_name[users_l[message.chat.id]][message.chat.id] = {'nik':message.text, 'username':message.chat.username}
-                print(users_name)
                 await message.answer(f'Вы в игре под ником {message.text.strip()}', reply_markup=MyKeyboard.menu_in_game())
                 await state.set_state(MyForm.game)
 
@@ -387,7 +385,6 @@ async def game(message: types.Message, state: FSMContext):
 
         result = ''
         for i in game_db[users_l[message.chat.id]]['users'].keys():
-            print(users_name)
             try:
                 result += f'{users_name[users_l[message.chat.id]][i]['username']}: {users_name[users_l[message.chat.id]][i]['nik']}\n'
             except KeyError:
@@ -550,7 +547,6 @@ async def check_admin(message: types.Message, state: FSMContext):
     elif text == 'нет':
 
         await EconomicGame.clear_user(message.chat.id, state)
-        print(admins)
         await message.answer('Вы вышли в основное меню', reply_markup=MyKeyboard.menu())
         await state.clear()
 
@@ -587,7 +583,6 @@ async def input_password_for_admin(message: types.Message, state: FSMContext):
 
     elif message.text == 'Выйти в меню':
         await EconomicGame.clear_user(message.chat.id, state)
-        print(admins)
 
     else:
         await message.answer('Вы ввели неправильный пароль')
